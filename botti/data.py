@@ -124,6 +124,8 @@ def lataa_paneeli(tickerit: list[str], alku: str, cache_dir: str | Path = "data"
     tarvittavat_fx = sorted({valuutta(t) for t in tickerit} - {"EUR"})
     fx_data = _lataa_yahoo([FX_TUNNUS[v] for v in tarvittavat_fx], alku, cache_dir)
     fx = {v: fx_data[FX_TUNNUS[v]]["Close"] for v in tarvittavat_fx if FX_TUNNUS[v] in fx_data}
+    if "DKK" in tarvittavat_fx and "DKK" not in fx:
+        fx["DKK"] = pd.Series(7.46, index=pd.bdate_range(alku, pd.Timestamp.today()))  # kruunu on sidottu euroon
 
     data = _lataa_yahoo(tickerit, alku, cache_dir)
     avaus, paatos, vaihto, puuttuvat = {}, {}, {}, []

@@ -12,8 +12,8 @@ import pandas as pd
 from .data import Paneeli
 from .valittaja import Kulumalli, Salkku
 
-VARIT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]          # vaalea tila
-VARIT_TUMMA = ["#3987e5", "#d95926", "#199e70", "#c98500"]    # tumma tila
+VARIT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]          # vaalea tila
+VARIT_TUMMA = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"]    # tumma tila
 
 
 # ---------------------------------------------------------------- luvut
@@ -138,6 +138,45 @@ def _svg_kaavio(sarjat: dict[str, pd.Series]) -> str:
     return "".join(osat) + f"<script>const KD={json.dumps(data)};</script>"
 
 
+def _tunnelmasana(x: float) -> str:
+    return "myönteinen" if x > 0.1 else ("kielteinen" if x < -0.1 else "neutraali")
+
+
+def _tietopohjahtml(sig, paiva, paatokset, lahdetila) -> str:
+    osat = []
+    ml, mp = float(sig.maailma_lyhyt.loc[paiva]), float(sig.maailma_pitka.loc[paiva])
+    yht = lahdetila.get("_yhteenveto", {})
+    osat.append("<h2>Tietopohja tänään</h2>")
+    osat.append(f'<p class="selite">Maailman uutistunnelma: lyhyellä aikavälillä <b>{_tunnelmasana(ml)}</b> ({ml:+.2f}), '
+                f'viikkojen aikavälillä <b>{_tunnelmasana(mp)}</b> ({mp:+.2f}). '
+                f'Uusia uutisia ja viestejä tällä ajolla {yht.get("uusia", 0)} kpl, tulkinta: {yht.get("tulkinta", "–")}.</p>')
+    rivit = []
+    for u in sig.paivan_uutiset(paiva, 15):
+        tt = ", ".join(u.tickerit) or "markkina"
+        otsikko = html.escape(u.otsikko[:140])
+        if u.linkki:
+            otsikko = f'<a href="{html.escape(u.linkki)}" target="_blank" rel="noopener">{otsikko}</a>'
+        rivit.append([html.escape(tt), u.tyyppi, f"{u.tunnelma:+.2f}", f"{u.paino:.1f}", otsikko, html.escape(u.lahde)])
+    if rivit:
+        osat.append("<h3>Painavimmat uutiset (2 pv)</h3>" + _taulukko(
+            rivit, ["Kohde", "Tyyppi", "Tunnelma", "Paino", "Otsikko", "Lähde"], "pieni"))
+    viimeiset = [p for p in paatokset if p["paiva"] == str(paiva.date())]
+    if viimeiset:
+        rivit = []
+        for p in viimeiset:
+            ehd = "<br>".join(f"<b>{html.escape(e['osake'])}</b> {html.escape(e['perustelu'])}" for e in p["ehdokkaat"][:3])
+            myy = "<br>".join(f"<b>{html.escape(t)}</b> {html.escape(s)}" for t, s in p.get("myydaan", {}).items())
+            rivit.append([html.escape(p["botti"]), html.escape(", ".join(p["pidetaan"]) or "–"),
+                          myy or "–", html.escape(p.get("estetty", "")) or ehd or "–"])
+        osat.append("<h3>Bottien päätökset tänään</h3>" + _taulukko(
+            rivit, ["Botti / osa", "Pidetään", "Myydään", "Parhaat ostoehdokkaat"], "pieni"))
+    lahteet = {k: v for k, v in lahdetila.items() if not k.startswith("_")}
+    if lahteet:
+        rivit = [[k, str(v["ok"]), str(v["virheet"]), html.escape(v.get("viimeisin_virhe", ""))] for k, v in lahteet.items()]
+        osat.append("<h3>Tietolähteiden tila</h3>" + _taulukko(rivit, ["Lähde", "Haettuja", "Virheitä", "Viimeisin virhe"], "pieni"))
+    return "".join(osat)
+
+
 def _taulukko(rivit: list[list[str]], otsikot: list[str], luokka="") -> str:
     th = "".join(f"<th>{html.escape(o)}</th>" for o in otsikot)
     tr = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rivit)
@@ -145,7 +184,8 @@ def _taulukko(rivit: list[list[str]], otsikot: list[str], luokka="") -> str:
 
 
 def html_raportti(otsikko: str, tila: str, botit: list[dict], vertailu: pd.Series,
-                  paneeli: Paneeli, kulut: Kulumalli, alkupaaoma: float, huomiot: list[str]) -> str:
+                  paneeli: Paneeli, kulut: Kulumalli, alkupaaoma: float, huomiot: list[str],
+                  sig=None, lahdetila: dict | None = None, paatokset: list[dict] | None = None) -> str:
     viimeisin = paneeli.paatos.index[-1]
     hinnat = paneeli.paatos.iloc[-1]
     sarjat = {b["nimi"].capitalize(): b["sarja"] for b in botit}
@@ -176,6 +216,10 @@ def html_raportti(otsikko: str, tila: str, botit: list[dict], vertailu: pd.Serie
                                           "Kulu n.", "Perustelu"], "toimeksiannot"))
         else:
             osat.append('<p class="tyhja">Ei kauppoja – botit pitävät nykyiset omistuksensa.</p>')
+
+    # -- tietopohja: maailma, uutiset, perustelut
+    if tila == "leikkikauppa" and sig is not None:
+        osat.append(_tietopohjahtml(sig, viimeisin, paatokset or [], lahdetila or {}))
 
     # -- kaavio + tunnusluvut
     osat.append("<h2>Salkkujen arvo</h2>")
@@ -237,9 +281,9 @@ SIVU = """<!DOCTYPE html>
 <title>{otsikko}</title>
 <style>
 :root{{--pinta:#fcfcfb;--taso:#f9f9f7;--teksti:#0b0b0b;--teksti2:#52514e;--himmea:#898781;--grid:#e1e0d9;--pohja:#c3c2b7;
---s0:{v[0]};--s1:{v[1]};--s2:{v[2]};--s3:{v[3]};--hyva:#006300;--paha:#c02c2c;--reuna:rgba(11,11,11,.10)}}
+--s0:{v[0]};--s1:{v[1]};--s2:{v[2]};--s3:{v[3]};--s4:{v[4]};--hyva:#006300;--paha:#c02c2c;--reuna:rgba(11,11,11,.10)}}
 @media (prefers-color-scheme:dark){{:root{{--pinta:#1a1a19;--taso:#0d0d0d;--teksti:#f0efec;--teksti2:#c3c2b7;--grid:#2c2c2a;--pohja:#383835;
---s0:{vt[0]};--s1:{vt[1]};--s2:{vt[2]};--s3:{vt[3]};--hyva:#0ca30c;--paha:#e66767;--reuna:rgba(255,255,255,.10)}}}}
+--s0:{vt[0]};--s1:{vt[1]};--s2:{vt[2]};--s3:{vt[3]};--s4:{vt[4]};--hyva:#0ca30c;--paha:#e66767;--reuna:rgba(255,255,255,.10)}}}}
 body{{font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--taso);color:var(--teksti);margin:0}}
 main{{max-width:1080px;margin:0 auto;padding:28px 20px 60px}}
 h1{{font-size:24px;margin:0}} h2{{font-size:18px;margin:34px 0 8px}} h3{{font-size:15px;margin:20px 0 6px}}
@@ -255,7 +299,7 @@ table.luvut td:not(:first-child),table.luvut th:not(:first-child){{text-align:ri
 .grid{{stroke:var(--grid);stroke-width:1}} .pohja{{stroke:var(--pohja);stroke-width:1}}
 .akseli{{fill:var(--himmea);font-size:11px}} .nimi{{fill:var(--teksti);font-size:12px}}
 .sarja{{stroke-width:2;stroke-linejoin:round}} .s0,.t0{{stroke:var(--s0);fill:var(--s0)}} .s1,.t1{{stroke:var(--s1);fill:var(--s1)}}
-.s2,.t2{{stroke:var(--s2);fill:var(--s2)}} .s3,.t3{{stroke:var(--s3);fill:var(--s3)}} polyline.sarja{{fill:none}}
+.s2,.t2{{stroke:var(--s2);fill:var(--s2)}} .s3,.t3{{stroke:var(--s3);fill:var(--s3)}} .s4,.t4{{stroke:var(--s4);fill:var(--s4)}} polyline.sarja{{fill:none}}
 .risti{{stroke:var(--pohja);stroke-width:1}}
 .vihje{{position:absolute;pointer-events:none;background:var(--pinta);border:1px solid var(--reuna);border-radius:6px;padding:6px 10px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap}}
 .vihje b{{display:block;margin-bottom:2px}}

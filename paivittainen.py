@@ -19,12 +19,14 @@ import pandas as pd
 
 from botti import lataa_asetukset
 from botti.data import Paneeli, lataa_paneeli, synteettinen_paneeli
+from botti import uutiset as uutismoduuli
+from botti.botit import aja_botit
 from botti.moottori import Moottori
 from botti.raportti import html_raportti, markkinasarja
-from botti.strategiat import KAIKKI
-from botti.valittaja import Salkku
+from botti.signaalit import Signaalit
 
 TILA = Path("tila/salkut.json")
+TILAVERSIO = 3   # kasvatetaan, kun bottien kokoonpano muuttuu -> vanha tila talletetaan ja aloitetaan alusta
 ARKISTO = Path("arkisto")
 DOCS = Path("docs")
 
@@ -93,8 +95,15 @@ def main():
     # Tila
     if TILA.exists():
         tila = json.loads(TILA.read_text(encoding="utf-8"))
+        if tila.get("versio") != TILAVERSIO:
+            varmuus = TILA.with_name(f"salkut_vanha_v{tila.get('versio', 2)}.json")
+            shutil.move(TILA, varmuus)
+            print(f"Bottien kokoonpano muuttui – vanha tila talletettu: {varmuus}")
+            tila = None
     else:
-        tila = {"aloitettu": str(viimeisin.date()), "kuluprofiili": cfg["kuluprofiili"],
+        tila = None
+    if tila is None:
+        tila = {"versio": TILAVERSIO, "aloitettu": str(viimeisin.date()), "kuluprofiili": cfg["kuluprofiili"],
                 "alkupaaoma": cfg["alkupaaoma"], "botit": {}}
         print(f"Aloitetaan uusi leikkikauppa {viimeisin.date()}, {cfg['alkupaaoma']} € per botti.")
     aloitus = pd.Timestamp(tila["aloitettu"])
@@ -105,22 +114,23 @@ def main():
     if len(uudet_paivat) == 0:
         print(f"Ei uusia kauppapäiviä ({viimeisin.date()} on jo käsitelty).")
 
+    # Uutiset, tiedotteet, foorumit ja maailma
+    lahdetila = {}
+    if cfg.get("uutiset", {}).get("kaytossa", True):
+        if a.testidata:
+            uudet = uutismoduuli.synteettiset_uutiset(cfg["tickerit"], viimeisin)
+            lahdetila = {"_yhteenveto": {"uusia": len(uudet), "tekoaly": 0, "tulkinta": "testidata"}}
+        else:
+            print("Kerätään uutisia...")
+            uudet, lahdetila = uutismoduuli.keraa(cfg, cfg["tickerit"])
+        uutismoduuli.tallenna(uudet)
+        print(f"  {len(uudet)} uutta uutista/viestiä")
+    sig = Signaalit(uutismoduuli.lataa_arkisto(), paneeli.paatos.index, paneeli.tickerit)
+
     moottori = Moottori(cfg)
     moottori.paatosloki = []
-    tulokset, huomiot = [], []
-    for nimi in cfg["kaytossa_botit"]:
-        strat = KAIKKI[nimi](cfg)
-        strat.valmistele(paneeli)
-        if nimi in tila["botit"]:
-            salkku = Salkku.from_dict(tila["botit"][nimi])
-        else:
-            salkku = Salkku(kateinen=float(cfg["alkupaaoma"]))
-        h = moottori.aja(salkku, strat, paneeli, alku=max(aloitus, viimeisin) if not salkku.arvohistoria else None)
-        huomiot += [f"[{nimi}] {x}" for x in h]
-        tila["botit"][nimi] = salkku.to_dict()
-        sarja = pd.Series(salkku.arvohistoria)
-        sarja.index = pd.to_datetime(sarja.index)
-        tulokset.append({"nimi": nimi, "kuvaus": strat.kuvaus, "salkku": salkku, "sarja": sarja})
+    tulokset, huomiot, tila["botit"] = aja_botit(cfg, paneeli, sig, moottori, tila["botit"],
+                                                 alku=max(aloitus, viimeisin))
 
     tila["viimeisin_kasitelty"] = str(viimeisin.date())
     TILA.parent.mkdir(exist_ok=True)
@@ -139,7 +149,8 @@ def main():
     Path("raportit").mkdir(exist_ok=True)
     sivu = html_raportti(f"Leikkikauppa – päivä {len(vertailu)}" + (" – TESTIDATA" if a.testidata else ""),
                          "leikkikauppa", tulokset, vertailu, paneeli, moottori.kulut,
-                         cfg["alkupaaoma"], huomiot)
+                         cfg["alkupaaoma"], huomiot, sig=sig, lahdetila=lahdetila,
+                         paatokset=moottori.paatosloki)
     polku = Path(f"raportit/raportti_{viimeisin.date()}.html")
     polku.write_text(sivu, encoding="utf-8")
     Path("raportit/viimeisin.html").write_text(sivu, encoding="utf-8")

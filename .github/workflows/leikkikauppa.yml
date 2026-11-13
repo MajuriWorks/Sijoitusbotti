@@ -16,7 +16,7 @@ concurrency:
 jobs:
   aja:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -29,6 +29,8 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Aja botit oikeilla kursseilla ja päivitä raporttisivu
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # valinnainen: tekoälytulkinta uutisille
         run: python paivittainen.py --julkaise
 
       - name: Tallenna salkkujen tila

@@ -1,9 +1,14 @@
 """Botit eli strategiat.
 
-Jokainen strategia vastaa kahteen kysymykseen päätöspäivänä:
-  1. Mitkä osakkeet ovat nyt parhaita ostettavaksi (järjestyksessä)?
-  2. Mitkä nykyisistä omistuksista kannattaa vielä pitää?
-Riskienhallinta (riskit.py) päättää lopulliset kaupat.
+Kaikki botit käyttävät SAMAA tietopohjaa:
+  - pörssikurssit ja kaupankäyntimäärät
+  - yhtiöuutiset ja pörssitiedotteet
+  - analyytikkojen suositusmuutokset
+  - johdon omat osakekaupat (sisäpiiri)
+  - foorumikeskustelut (Inderes, Reddit)
+  - maailman tapahtumat ja markkinatunnelma
+Erona on aikajänne: Lyhyt reagoi päivittäin, Pitkä katsoo kuukausia.
+Yhdistelmä (botit.py) käyttää molempia: 60 % Pitkä + 40 % Lyhyt.
 """
 from __future__ import annotations
 
@@ -13,6 +18,7 @@ import numpy as np
 import pandas as pd
 
 from .data import Paneeli
+from .signaalit import Signaalit
 
 
 @dataclass
@@ -20,18 +26,38 @@ class Ehdotus:
     ostettavat: list[str]          # parhaasta huonoimpaan
     pidettavat: set[str]           # nykyiset omistukset, jotka saa pitää
     perustelut: dict[str, str]     # ticker -> selitys
+    estetty: str = ""              # syy, miksi uusia ostoja ei tehdä (esim. maailman tilanne)
+
+
+def _sija(df: pd.DataFrame) -> pd.DataFrame:
+    """Poikkileikkaussija -0.5 ... +0.5 (kestää ääriarvot)."""
+    return df.rank(axis=1, pct=True) - 0.5
+
+
+def _historia(c: pd.DataFrame, pv: int) -> pd.DataFrame:
+    return c.notna().rolling(pv, min_periods=pv).sum() >= pv
+
+
+def _likvidi(paneeli: Paneeli, min_vaihto: float) -> pd.DataFrame:
+    return paneeli.vaihto.rolling(20, min_periods=10).median() >= min_vaihto
 
 
 class Strategia:
     nimi = "perus"
     kuvaus = ""
+    stop_loss: float | None = None         # None = config.yaml riskit.stop_loss_prosentti
+    max_positiot: int | None = None        # None = config.yaml riskit.max_positiot
 
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: dict, nimi: str | None = None, max_positiot: int | None = None):
         self.cfg = cfg
         self.min_vaihto = cfg["riskit"].get("min_paivavaihto_eur", 0)
+        if nimi:
+            self.nimi = nimi
+        if max_positiot:
+            self.max_positiot = max_positiot
+        self.positiot = {}                 # moottori asettaa ennen ehdota()-kutsua
 
-    def valmistele(self, paneeli: Paneeli) -> None:
-        """Laskee indikaattorit kerran koko datalle (vain menneisyyttä käyttäen)."""
+    def valmistele(self, paneeli: Paneeli, sig: Signaalit) -> None:
         raise NotImplementedError
 
     def onko_paatospaiva(self, paiva: pd.Timestamp, edellinen: str) -> bool:
@@ -40,72 +66,114 @@ class Strategia:
     def ehdota(self, paiva: pd.Timestamp, omistukset: set[str], n: int) -> Ehdotus:
         raise NotImplementedError
 
+    # -- yhteiset apurit
+    def _uutisteksti(self, t: str, paiva) -> str:
+        u = self.sig.tuorein_otsikko(t, paiva)
+        if not u:
+            return ""
+        merkki = "+" if u.tunnelma > 0 else ("−" if u.tunnelma < 0 else "±")
+        return f" | uutinen ({merkki}): {u.otsikko[:90]}"
 
-def _riittava_historia(c: pd.DataFrame, pv: int = 252) -> pd.DataFrame:
-    return c.notna().rolling(pv, min_periods=pv).sum() >= pv
+    def _markkinasuunta(self, paneeli: Paneeli) -> pd.Series:
+        """Helsingin osakkeet tasapainoisesti: onko markkina 200 pv keskiarvon yläpuolella."""
+        hel = [t for t in paneeli.paatos.columns if t.endswith(".HE")] or list(paneeli.paatos.columns)
+        idx = (1 + paneeli.paatos[hel].pct_change().mean(axis=1).fillna(0)).cumprod()
+        return idx > idx.rolling(200, min_periods=100).mean()
 
 
-def _likvidi(paneeli: Paneeli, min_vaihto: float) -> pd.DataFrame:
-    """Osake kelpaa, jos sen päivävaihdon mediaani 20 pv ajalta ylittää rajan."""
-    return paneeli.vaihto.rolling(20, min_periods=10).median() >= min_vaihto
+# ======================================================================= Lyhyt
+class Lyhyt(Strategia):
+    nimi = "lyhyt"
+    kuvaus = ("Lyhyen aikavälin botti. Tarkistaa joka päivä. Ostaa osakkeita, joilla on tuoreita myönteisiä "
+              "uutisia tai tiedotteita, analyytikoiden suositusten nostoja tai johdon ostoja, ja joiden kurssi "
+              "ja kaupankäynti vahvistavat liikkeen. Pitää päivistä noin kolmeen viikkoon. Ei osta uusia, jos "
+              "maailman uutistunnelma on selvästi negatiivinen.")
+    stop_loss = 8.0
+    max_pito_pv = 15        # kauppapäivää
+    min_pito_pv = 3
 
-
-# ====================================================================== Trendi
-class Trendi(Strategia):
-    nimi = "trendi"
-    kuvaus = ("Viikoittain tarkistettava trendinseuraaja. Ostaa osakkeita, joiden kurssi on "
-              "nousutrendissä (yli 200 pv keskiarvon) ja jotka ovat nousseet eniten 3 kk aikana. "
-              "Myy, kun trendi katkeaa (alle 100 pv keskiarvon) tai osake putoaa kärkijoukosta.")
-
-    def valmistele(self, paneeli: Paneeli) -> None:
+    def valmistele(self, paneeli, sig):
+        self.sig = sig
         c = paneeli.paatos
-        self.c = c
-        self.sma50 = c.rolling(50).mean()
-        self.sma100 = c.rolling(100).mean()
-        self.sma200 = c.rolling(200).mean()
-        self.r63 = c / c.shift(63) - 1
-        self.ok = _riittava_historia(c) & _likvidi(paneeli, self.min_vaihto)
+        self.c, self.sma20, self.sma50 = c, c.rolling(20).mean(), c.rolling(50).mean()
+        r5, r20 = c / c.shift(5) - 1, c / c.shift(20) - 1
+        vaihto_piikki = np.log((paneeli.vaihto / paneeli.vaihto.rolling(20, min_periods=10).median()).clip(0.2, 5))
+        self.vol = np.log(c).diff().rolling(60).std() * np.sqrt(252)
+        u = sig.uutis_lyhyt.reindex_like(c).fillna(0)
+        self.uutis = u
+        self.pisteet = (0.40 * _sija(r20) + 0.20 * _sija(r5) + 0.10 * vaihto_piikki.clip(-1, 1).fillna(0)
+                        + 0.60 * np.tanh(u)
+                        + 0.30 * np.tanh(sig.analyytikko.reindex_like(c).fillna(0))
+                        + 0.20 * np.tanh(sig.sisapiiri.reindex_like(c).fillna(0))
+                        + 0.05 * sig.foorumi.reindex_like(c).fillna(0).clip(-2, 2))
+        self.ok = _historia(c, 60) & _likvidi(paneeli, self.min_vaihto)
+        self.maailma = sig.maailma_lyhyt.reindex(c.index).fillna(0)
+        self.r20 = r20
 
     def onko_paatospaiva(self, paiva, edellinen):
-        if not edellinen:
-            return True
-        return paiva.isocalendar()[:2] != pd.Timestamp(edellinen).isocalendar()[:2]
+        return True
 
     def ehdota(self, paiva, omistukset, n):
-        c, s50, s100, s200 = self.c.loc[paiva], self.sma50.loc[paiva], self.sma100.loc[paiva], self.sma200.loc[paiva]
-        r = self.r63.loc[paiva].where(self.ok.loc[paiva])
-        kelpaa = (c > s200) & (s50 > s200) & (r > 0)
-        jarjestys = r.dropna().sort_values(ascending=False)
+        c, s20, s50 = self.c.loc[paiva], self.sma20.loc[paiva], self.sma50.loc[paiva]
+        p = self.pisteet.loc[paiva].where(self.ok.loc[paiva])
+        u = self.uutis.loc[paiva]
+        kelpaa = (c > s20) & (c > s50) & (u > -0.2) & (self.vol.loc[paiva] < 0.8)
+        if self.sig.onko_dataa:
+            # Uutisdata käytössä: lyhyt kauppa vaatii tuoreen myönteisen uutisen (kulut ovat suuret)
+            kelpaa &= u > 0.15
+        jarjestys = p.dropna().sort_values(ascending=False)
         sijat = {t: i for i, t in enumerate(jarjestys.index)}
-        ostettavat = [t for t in jarjestys.index if kelpaa.get(t, False)]
-        raja = max(3 * n, 6)
-        pidettavat = {t for t in omistukset
-                      if t in sijat and sijat[t] < raja and c.get(t, 0) > s100.get(t, np.inf)}
-        perustelut = {t: f"3 kk nousu {r[t]:+.1%}, kurssi {c[t] / s200[t] - 1:+.1%} yli 200 pv keskiarvon"
-                      for t in ostettavat[:10]}
-        for t in omistukset - pidettavat:
-            if c.get(t, 0) <= s100.get(t, 0):
-                perustelut[t] = "Trendi katkesi: kurssi alle 100 pv keskiarvon"
+        estetty = ""
+        if self.maailma.loc[paiva] < -0.3:
+            estetty = f"Maailman uutistunnelma negatiivinen ({self.maailma.loc[paiva]:+.2f}) – ei uusia ostoja"
+        ostettavat = [] if estetty else [t for t in jarjestys.index if kelpaa.get(t, False)]
+
+        pidettavat, perustelut = set(), {}
+        ind = self.c.index
+        for t in omistukset:
+            pos = self.positiot.get(t)
+            pito = (ind.searchsorted(paiva) - ind.searchsorted(pd.Timestamp(pos.ostopaiva))) if pos else 0
+            if pito < self.min_pito_pv:
+                pidettavat.add(t)
+            elif pito >= self.max_pito_pv:
+                perustelut[t] = f"Pitoaika täynnä ({pito} kauppapäivää)"
+            elif u.get(t, 0) < -0.3:
+                perustelut[t] = "Negatiivinen uutinen" + self._uutisteksti(t, paiva)
+            elif c.get(t, 0) < s20.get(t, np.inf):
+                perustelut[t] = "Lyhyt trendi katkesi (alle 20 pv keskiarvon)"
+            elif sijat.get(t, 10**6) >= 25 and u.get(t, 0) <= 0:
+                perustelut[t] = "Uutisvire hiipunut ja signaali heikentynyt"
             else:
-                perustelut[t] = "Pudonnut kärkijoukosta, parempia vaihtoehtoja"
-        return Ehdotus(ostettavat, pidettavat, perustelut)
+                pidettavat.add(t)
+        for t in ostettavat[:10]:
+            perustelut[t] = (f"pisteet {p[t]:+.2f}, 20 pv nousu {self.r20.loc[paiva, t]:+.1%}"
+                             + self._uutisteksti(t, paiva))
+        return Ehdotus(ostettavat, pidettavat, perustelut, estetty)
 
 
-# ================================================================= Rauhallinen
-class Rauhallinen(Strategia):
-    nimi = "rauhallinen"
-    kuvaus = ("Kuukausittain tarkistettava pitkän aikavälin botti. Valitsee osakkeita, jotka ovat "
-              "nousseet tasaisesti viimeisen vuoden (12 kk tuotto suhteessa heiluntaan). "
-              "Jos koko markkina on laskussa, jää käteiselle. Vaihtaa omistuksia harvoin.")
+# ======================================================================= Pitkä
+class Pitka(Strategia):
+    nimi = "pitka"
+    kuvaus = ("Pitkän aikavälin botti. Tarkistaa kerran kuussa. Valitsee osakkeita, jotka ovat nousseet "
+              "tasaisesti vuoden ajan ja joista uutiset, analyytikot ja johdon omat kaupat ovat viime viikkoina "
+              "olleet myönteisiä. Välttää jo valmiiksi ylikuumentuneita pienyhtiöitä. Jää käteiselle, jos "
+              "markkina on laskutrendissä ja maailman uutistunnelma negatiivinen.")
 
-    def valmistele(self, paneeli: Paneeli) -> None:
+    def valmistele(self, paneeli, sig):
+        self.sig = sig
         c = paneeli.paatos
-        self.c = c
-        self.sma200 = c.rolling(200).mean()
+        self.c, self.sma200 = c, c.rolling(200).mean()
         self.mom = c.shift(21) / c.shift(252) - 1
         self.vol = np.log(c).diff().rolling(126).std() * np.sqrt(252)
-        self.pisteet = self.mom / self.vol
-        self.ok = _riittava_historia(c, 260) & _likvidi(paneeli, self.min_vaihto)
+        self.uutis = sig.uutis_pitka.reindex_like(c).fillna(0)
+        self.pisteet = (_sija(self.mom / self.vol)
+                        + 0.40 * np.tanh(self.uutis / 2)
+                        + 0.30 * np.tanh(sig.analyytikko.reindex_like(c).fillna(0))
+                        + 0.30 * np.tanh(sig.sisapiiri.reindex_like(c).fillna(0)))
+        self.ok = _historia(c, 260) & _likvidi(paneeli, self.min_vaihto)
+        self.kuuma = (self.mom > 1.5) | (self.vol > 0.6)
+        self.nousu = self._markkinasuunta(paneeli)
+        self.maailma = sig.maailma_pitka.reindex(c.index).fillna(0)
 
     def onko_paatospaiva(self, paiva, edellinen):
         if not edellinen:
@@ -116,35 +184,46 @@ class Rauhallinen(Strategia):
     def ehdota(self, paiva, omistukset, n):
         c, s200 = self.c.loc[paiva], self.sma200.loc[paiva]
         p = self.pisteet.loc[paiva].where(self.ok.loc[paiva])
-        m = self.mom.loc[paiva]
-        kelpaa = (m > 0) & (c > s200)
+        m, u = self.mom.loc[paiva], self.uutis.loc[paiva]
+        kelpaa = (m > 0) & (c > s200) & (~self.kuuma.loc[paiva]) & (u > -0.5)
         jarjestys = p.dropna().sort_values(ascending=False)
         sijat = {t: i for i, t in enumerate(jarjestys.index)}
-        ostettavat = [t for t in jarjestys.index if kelpaa.get(t, False)]
-        pidettavat = {t for t in omistukset
-                      if t in sijat and sijat[t] < max(2 * n, 4) and c.get(t, 0) > s200.get(t, np.inf)}
-        perustelut = {t: f"12 kk nousu {m[t]:+.1%}, heilunta {self.vol.loc[paiva, t]:.0%}/v"
-                      for t in ostettavat[:10]}
-        for t in omistukset - pidettavat:
-            perustelut[t] = ("Pitkä trendi katkesi (alle 200 pv keskiarvon)"
-                             if c.get(t, 0) <= s200.get(t, 0) else "Pudonnut kärkijoukosta")
-        return Ehdotus(ostettavat, pidettavat, perustelut)
+        estetty = ""
+        if not bool(self.nousu.loc[paiva]) and self.maailma.loc[paiva] < -0.15:
+            estetty = "Markkina laskutrendissä ja maailman uutistunnelma negatiivinen – ei uusia ostoja"
+        ostettavat = [] if estetty else [t for t in jarjestys.index if kelpaa.get(t, False)]
+        pidettavat, perustelut = set(), {}
+        for t in omistukset:
+            if c.get(t, 0) <= s200.get(t, np.inf):
+                perustelut[t] = "Pitkä trendi katkesi (alle 200 pv keskiarvon)"
+            elif u.get(t, 0) < -0.5:
+                perustelut[t] = "Uutisvirta selvästi negatiivinen" + self._uutisteksti(t, paiva)
+            elif sijat.get(t, 10**6) >= max(3 * n, 6):
+                perustelut[t] = "Pudonnut kärkijoukosta"
+            else:
+                pidettavat.add(t)
+        for t in ostettavat[:10]:
+            perustelut[t] = (f"12 kk nousu {m[t]:+.1%}, heilunta {self.vol.loc[paiva, t]:.0%}/v"
+                             + self._uutisteksti(t, paiva))
+        return Ehdotus(ostettavat, pidettavat, perustelut, estetty)
 
 
 # ===================================================================== Indeksi
 class Indeksi(Strategia):
     nimi = "indeksi"
-    kuvaus = ("Ostaa maailmanindeksi-ETF:n kerran ja pitää sen. Ei yritä olla fiksu – juuri siksi "
-              "se on reilu vertailukohta: aktiivisen botin pitää voittaa tämä kulujen jälkeen.")
+    kuvaus = ("Vertailukohta: ostaa maailmanindeksi-ETF:n kerran ja pitää sen. Ei yritä olla fiksu – "
+              "juuri siksi se on reilu mittari: bottien pitää voittaa tämä kulujen jälkeen.")
+    max_positiot = 1
+    kayta_stop_lossia = False
 
-    def valmistele(self, paneeli: Paneeli) -> None:
+    def valmistele(self, paneeli, sig):
         self.etf = self.cfg["botit"]["indeksi"]["etf"]
         self.c = paneeli.paatos
 
     def onko_paatospaiva(self, paiva, edellinen):
         if not edellinen:
             return True
-        e = pd.Timestamp(edellinen)   # tarkistus kuukausittain; ostaa vain, jos salkku on tyhjä
+        e = pd.Timestamp(edellinen)
         return (paiva.year, paiva.month) != (e.year, e.month)
 
     def ehdota(self, paiva, omistukset, n):
@@ -152,8 +231,5 @@ class Indeksi(Strategia):
             return Ehdotus([], set(omistukset), {})
         return Ehdotus([self.etf], {self.etf}, {self.etf: "Osta ja pidä: koko maailman osakemarkkina"})
 
-    max_positiot = 1
-    kayta_stop_lossia = False   # osta ja pidä: ei myydä pudotuksissa
 
-
-KAIKKI = {"trendi": Trendi, "rauhallinen": Rauhallinen, "indeksi": Indeksi}
+STRATEGIAT = {"lyhyt": Lyhyt, "pitka": Pitka, "indeksi": Indeksi}

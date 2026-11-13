@@ -1,4 +1,4 @@
-# Sijoitusbotti – versio 2
+# Sijoitusbotti – versio 3
 
 Leikkirahalla toimiva sijoitusbotti. Se seuraa koko Helsingin pörssiä, Pohjoismaiden
 suurimpia yhtiöitä ja indeksi-ETF:iä. Botti **ei käy kauppaa oikealla rahalla**: se simuloi
@@ -7,25 +7,36 @@ vakuuttavia, samat toimeksiannot voi tehdä Nordnetissa käsin.
 
 ## Botit
 
+Kolme bottia, joilla on **sama tietopohja** mutta eri aikajänne:
+
 | Botti | Tarkistus | Pitoaika | Idea |
 |---|---|---|---|
-| **Trendi** | kerran viikossa | viikoista kuukausiin | Ostaa nousutrendissä olevia osakkeita, joiden 3 kk nousu on suurin. Myy, kun trendi katkeaa. |
-| **Rauhallinen** | kerran kuussa | kuukausista vuosiin | Ostaa osakkeita, jotka ovat nousseet vuoden ajan tasaisesti. Jää käteiselle, jos markkina laskee. |
-| **Indeksi** | – | aina | Ostaa maailmanindeksin (EUNL) kerran ja pitää sen. Realistinen vertailukohta kuluineen. |
+| **Lyhyt** | joka päivä | päivistä ~3 viikkoon | Tuoreet myönteiset uutiset/tiedotteet, suositusten nostot tai johdon ostot, jotka kurssi ja kaupankäynti vahvistavat. Stop-loss 8 %. |
+| **Pitkä** | kerran kuussa | kuukausista vuosiin | Vuoden tasainen nousu + myönteinen uutisvirta, analyytikot ja johdon kaupat. Välttää ylikuumentuneet pienyhtiöt. Jää käteiselle, jos markkina on laskussa ja maailman tunnelma negatiivinen. |
+| **Yhdistelmä** | molemmat | molemmat | 60 % Pitkä-säännöillä (1 osake) + 40 % Lyhyt-säännöillä (1 osake). |
+| *Indeksi* | – | aina | Vertailukohta: maailmanindeksi (EUNL) ostettuna ja pidettynä, kuluineen. |
 | *Helsinki* | – | – | Vertailukäyrä: Helsingin osakkeet tasapainoisesti, ilman kuluja. |
 
-Aktiivisen botin (Trendi, Rauhallinen) pitää voittaa Indeksi ja Helsinki kulujen jälkeen.
-Muuten oikeaa rahaa ei kannata antaa sille.
+### Tietopohja (kaikilla boteilla sama)
 
-Yhteiset säännöt (`config.yaml` → `riskit`):
+- **Pörssikurssit ja kaupankäyntimäärät:** Yahoo Finance; Helsinki, Pohjoismaat, ETF:t.
+- **Yhtiöuutiset ja pörssitiedotteet:** Google News -hakusyöte yhtiöittäin sekä Yahoo Finance.
+- **Analyytikoiden suositusmuutokset:** esim. "nostaa suositusta", "tavoitehinta".
+- **Johdon omat osakekaupat:** johdon liiketoimet -tiedotteet.
+- **Maailman tapahtumat:** korot, tullit, taantumapelot, öljy ja geopolitiikka. Haut voi muokata tiedostossa `config.yaml`.
+- **Foorumit:** Inderesin foorumi ja Reddit. Mitataan, mistä yhtiöistä keskustellaan tavallista enemmän.
 
-- enintään 2 osaketta kerrallaan
-- 15 %:n stop-loss huipusta (ei koske Indeksiä)
-- kauppaa ei tehdä, jos kulut ylittävät 2,5 % kauppasummasta
-- osakkeen päivävaihdon pitää olla vähintään 200 000 €; vähän vaihdetut jätetään pois, koska niissä osto- ja myyntihinnan ero syö tuottoa
+Jokainen uutinen saa tunnelman (−1…+1) ja painoarvon. Oletuksena tulkinta tehdään avainsanoilla.
+**Tekoälytulkinta** (tarkempi) otetaan käyttöön lisäämällä GitHubiin salaisuus `ANTHROPIC_API_KEY`
+(Settings → Secrets and variables → Actions → New repository secret). Kustannus on arviolta muutamia euroja kuukaudessa.
+Kaikki uutiset tallentuvat kansioon `arkisto/uutiset/`, ja raportin kohta *Tietolähteiden tila* kertoo, mitkä lähteet toimivat.
 
-Toimeksiannot tehdään päivän päätöskurssien perusteella ja toteutetaan **seuraavan päivän avauskurssiin**.
-Muiden valuuttojen kurssit (SEK, NOK, DKK) muunnetaan euroiksi päivän valuuttakurssilla.
+**Historiatesti käyttää vain kurssitietoja**, koska menneiden vuosien uutisia ei saa ilmaiseksi.
+Uutisten ja somen hyöty nähdään leikkikaupassa.
+
+Yhteiset säännöt (`config.yaml` → `riskit`): enintään 2 osaketta kerrallaan, stop-loss 15 % (Lyhyt 8 %, ei koske Indeksiä),
+kauppaa ei tehdä, jos kulut ylittävät 2,5 % kauppasummasta (pienessä salkussa enintään 4 %), ja vähimmäispäivävaihto on 200 000 €.
+Toimeksiannot tehdään päivän päätöskurssien ja iltaan mennessä julkaistujen uutisten perusteella, ja ne toteutetaan **seuraavan päivän avauskurssiin**.
 
 ## Pilveen: botti pyörii ilman omaa konetta (suositus)
 
@@ -72,7 +83,7 @@ vuosittain sekä linkit raporttiarkistoon ja historiatestiin.
 
 ## Ennen oikeaa rahaa – tarkistuslista
 
-- [ ] Historiatesti oikealla datalla: botti voittaa Indeksin kulujen jälkeen useimpina vuosina.
+- [ ] Leikkikaupassa botti voittaa Indeksin kulujen jälkeen (historiatesti ei sisällä uutisia).
 - [ ] Suurin pudotus on sellainen, jonka kestäisit oikealla rahalla.
 - [ ] Vähintään 2–3 kuukautta leikkikauppaa, ja tulos on linjassa historiatestin kanssa.
 - [ ] Kuluprofiili vastaa omaa välittäjääsi.

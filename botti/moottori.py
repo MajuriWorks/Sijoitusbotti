@@ -32,7 +32,7 @@ class Moottori:
         self.valittaja.paivita_huiput(salkku, paatos)
 
         # 2) Stop-loss tarkistetaan joka päivä
-        sl = self.riskit["stop_loss_prosentti"] / 100
+        sl = (getattr(strategia, "stop_loss", None) or self.riskit["stop_loss_prosentti"]) / 100
         myytavana = {o.ticker for o in salkku.odottavat if o.suunta == "MYY"}
         for t, p in (salkku.positiot.items() if getattr(strategia, "kayta_stop_lossia", True) else []):
             h = paatos.get(t)
@@ -54,6 +54,7 @@ class Moottori:
     def _paata(self, salkku, strategia, paiva, paatos, myytavana) -> list[str]:
         n = getattr(strategia, "max_positiot", None) or self.riskit["max_positiot"]
         omistukset = set(salkku.positiot) - myytavana
+        strategia.positiot = salkku.positiot
         ehd = strategia.ehdota(paiva, omistukset, n)
         huomiot = []
         pv = str(paiva.date())
@@ -62,6 +63,8 @@ class Moottori:
                 "paiva": pv, "botti": strategia.nimi, "omistukset": sorted(omistukset),
                 "pidetaan": sorted(omistukset & ehd.pidettavat),
                 "ehdokkaat": [{"osake": t, "perustelu": ehd.perustelut.get(t, "")} for t in ehd.ostettavat[:10]],
+                "myydaan": {t: ehd.perustelut.get(t, "") for t in sorted(omistukset - ehd.pidettavat)},
+                "estetty": ehd.estetty,
             })
 
         myydaan = omistukset - ehd.pidettavat
@@ -87,6 +90,10 @@ class Moottori:
         if not uudet:
             return huomiot
         max_kulu = self.riskit["max_kulu_prosentti"]
+        # Pieni salkku: yksi osake saa maksaa enemmän kuluja kuin tavallisesti,
+        # muuten botti jäisi pysyvästi käteiselle tappioiden jälkeen.
+        if raha < self.kulut.pienin_jarkeva_kauppa(uudet[0], max_kulu):
+            max_kulu = max_kulu * 1.6
         # Jos raha ei riitä järkevän kokoisiin kauppoihin kaikille, ostetaan vähemmän osakkeita
         raja1 = self.kulut.pienin_jarkeva_kauppa(uudet[0], max_kulu)
         mahtuu = max(1, int(raha // raja1)) if raja1 > 0 else len(uudet)

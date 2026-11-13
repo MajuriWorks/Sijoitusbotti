@@ -93,14 +93,51 @@ osakkeet:
   usa: []
 
 # ---------------- Botit ----------------
+# Kaikki botit käyttävät samaa tietopohjaa (kurssit, uutiset, tiedotteet, analyytikot,
+# johdon kaupat, foorumit, maailman tapahtumat). Ero on aikajänteessä.
 botit:
-  trendi:
-    kaytossa: true        # Tarkistaa kerran viikossa, pitää osakkeita viikoista kuukausiin
-  rauhallinen:
-    kaytossa: true        # Tarkistaa kerran kuussa, pitää osakkeita kuukausista vuosiin
+  lyhyt:
+    kaytossa: true        # Päivittäin: tuoreet uutiset + kurssiliike, pito päivistä ~3 viikkoon
+  pitka:
+    kaytossa: true        # Kuukausittain: tasainen nousu + uutisvirta, pito kuukausista vuosiin
+  yhdistelma:
+    kaytossa: true        # 60 % Pitkä + 40 % Lyhyt
   indeksi:
-    kaytossa: true        # Ostaa maailmanindeksin kerran ja pitää – realistinen vertailukohta kuluineen
+    kaytossa: true        # Vertailukohta: maailmanindeksi ostettuna ja pidettynä
     etf: EUNL.DE
+
+# ---------------- Uutiset, foorumit ja maailma ----------------
+uutiset:
+  kaytossa: true
+  # Tekoälytulkinta otetaan käyttöön lisäämällä GitHubiin salaisuus ANTHROPIC_API_KEY.
+  # Ilman sitä uutiset tulkitaan avainsanoilla.
+  tekoaly_malli: claude-haiku-5-5
+  max_yhtiohakuja: 200
+  lahteet:
+    google_yhtiot: true      # yhtiökohtaiset uutiset ja pörssitiedotteet
+    yahoo: true              # Yahoo Financen yhtiöuutiset
+    analyytikot: true        # suositusmuutokset ja tavoitehinnat
+    sisapiiri: true          # johdon liiketoimet
+    maailma: true            # maailman tapahtumat ja markkinatunnelma
+    inderes_foorumi: true    # mistä yhtiöistä keskustellaan
+    reddit: true
+  maailma_haut:
+    - pörssi
+    - osakemarkkinat
+    - Suomen talous
+    - stock market today
+    - Federal Reserve interest rates
+    - ECB interest rates
+    - tariffs trade war
+    - recession fears
+    - oil price
+    - geopolitical tensions markets
+  reddit:
+    - Osakkeet
+    - stocks
+    - investing
+    - StockMarket
+    - wallstreetbets
 
 # ---------------- Historiatesti ----------------
 historia_alku: "2016-01-01"
