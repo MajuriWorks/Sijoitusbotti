@@ -1,0 +1,47 @@
+# Historiatesti oikeilla kursseilla. Aja käsin (Actions -> Historiatesti -> Run workflow).
+# Ajetaan myös automaattisesti kuun ensimmäisenä lauantaina.
+name: Historiatesti
+
+on:
+  schedule:
+    - cron: "0 8 1-7 * 6"
+  workflow_dispatch:
+    inputs:
+      alku:
+        description: "Aloituspäivä (YYYY-MM-DD), tyhjä = koko historia"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: leikkikauppa
+  cancel-in-progress: false
+
+jobs:
+  testi:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Aja historiatesti
+        run: |
+          if [ -n "${{ github.event.inputs.alku }}" ]; then
+            python historiatesti.py --vertaa-kulut --julkaise --alku "${{ github.event.inputs.alku }}"
+          else
+            python historiatesti.py --vertaa-kulut --julkaise
+          fi
+      - name: Tallenna raportti
+        run: |
+          git config user.name "sijoitusbotti"
+          git config user.email "sijoitusbotti@users.noreply.github.com"
+          git add docs/historiatesti.html
+          git diff --cached --quiet || git commit -m "Historiatesti $(date +%F)"
+          git pull --rebase
+          git push

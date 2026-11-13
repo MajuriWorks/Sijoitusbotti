@@ -1,0 +1,4 @@
+data/
+raportit/
+__pycache__/
+*.pyc

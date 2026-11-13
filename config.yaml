@@ -1,0 +1,106 @@
+# ============================================================
+#  Sijoitusbotti – asetukset
+#  Muokkaa tätä tiedostoa; koodiin ei tarvitse koskea.
+# ============================================================
+
+alkupaaoma: 1000          # euroa per botti (leikkiraha)
+
+# ---------------- Kaupankäyntikulut ----------------
+# Valitse käytössä oleva profiili. Historiatestissä voit verrata kaikkia:
+#   python historiatesti.py --vertaa-kulut
+# TARKISTA omat tasosi: Nordnet > Omat sivuni > Tilit > Välityspalkkioluokka.
+# Pohjoismaat/Eurooppa/USA-luvut ovat arvioita – tarkista hinnastosta ennen oikeaa rahaa.
+kuluprofiili: nordnet
+
+kuluprofiilit:
+  nordnet:                      # Nordnet perustaso (taso 4)
+    helsinki:    {prosentti: 0.20, minimi: 9.0}
+    pohjoismaat: {prosentti: 0.20, minimi: 9.0, valuutanvaihto_prosentti: 0.25}
+    eurooppa:    {prosentti: 0.20, minimi: 15.0}
+    usa:         {prosentti: 0.20, minimi: 9.0, valuutanvaihto_prosentti: 0.25}
+  nordnet_osakesaastajat:       # Osakesäästäjien jäsen -> vähintään taso 3
+    helsinki:    {prosentti: 0.15, minimi: 7.0}
+    pohjoismaat: {prosentti: 0.15, minimi: 7.0, valuutanvaihto_prosentti: 0.25}
+    eurooppa:    {prosentti: 0.20, minimi: 15.0}
+    usa:         {prosentti: 0.15, minimi: 9.0, valuutanvaihto_prosentti: 0.25}
+  nordea:                       # alle 800 € kaupoissa 1 % katto (Pohjoismaat + ETF:t)
+    helsinki:    {prosentti: 0.20, minimi: 8.0, katto_alle: 800, katto_prosentti: 1.0}
+    pohjoismaat: {prosentti: 0.20, minimi: 8.0, katto_alle: 800, katto_prosentti: 1.0, valuutanvaihto_prosentti: 0.50}
+    eurooppa:    {prosentti: 0.20, minimi: 8.0, katto_alle: 800, katto_prosentti: 1.0}
+    usa:         {prosentti: 0.20, minimi: 15.0, valuutanvaihto_prosentti: 0.50}
+  ilman_kuluja:                 # vain vertailuun: kuinka paljon kulut maksavat
+    helsinki:    {prosentti: 0.0, minimi: 0.0}
+    pohjoismaat: {prosentti: 0.0, minimi: 0.0}
+    eurooppa:    {prosentti: 0.0, minimi: 0.0}
+    usa:         {prosentti: 0.0, minimi: 0.0}
+
+# ---------------- Riskienhallinta ----------------
+riskit:
+  max_positiot: 2              # 1000 €:lla 2 positiota pitää kulut kohtuullisina
+  max_kulu_prosentti: 2.5      # kauppaa ei tehdä, jos kulu ylittää tämän % kauppasummasta
+  kateisvara_prosentti: 2      # pidetään käteisenä kulujen varalle
+  stop_loss_prosentti: 15      # myy, jos kurssi laskee näin paljon huipustaan omistusaikana
+  min_paivavaihto_eur: 200000  # vähemmän vaihdetut osakkeet jätetään pois (osto- ja myyntihinnan ero)
+
+# ---------------- Seurattavat kohteet ----------------
+# Yahoo Finance -tunnukset. Pääte kertoo pörssin: .HE Helsinki, .ST Tukholma,
+# .OL Oslo, .CO Kööpenhamina, .DE Saksa (Xetra). Ilman päätettä = USA.
+# Tunnukset, joille kursseja ei löydy, näkyvät raportissa – ne voi poistaa tai korjata.
+osakkeet:
+  # Koko Helsingin pörssi (n. 60 M€ markkina-arvosta ylöspäin), suurimmasta pienimpään
+  helsinki:
+    [
+      NDA-FI.HE, NOKIA.HE, ERIBR.HE, KNEBV.HE, SAMPO.HE, NESTE.HE, FORTUM.HE, WRT1V.HE,
+      TELIA1.HE, METSO.HE, UPM.HE, ORNBV.HE, SSABAH.HE, KESKOB.HE, STERV.HE, KCR.HE,
+      ELISA.HE, VALMT.HE, HIAB.HE, HUH1V.HE, MANTA.HE, OUT1V.HE, KALMAR.HE, KEMIRA.HE,
+      TYRES.HE, TIETO.HE, LUMO.HE, VAIAS.HE, IQMX.HE, SANOMA.HE, PUUILO.HE, METSB.HE,
+      BITTI.HE, FSKRS.HE, ALMA.HE, TTALO.HE, FIA1S.HE, AKTIA.HE, QTCOM.HE, GRK.HE,
+      HARVIA.HE, YIT.HE, SCANFL.HE, ALBBV.HE, OLVAS.HE, PON1V.HE, EVLI.HE, KEMPOWR.HE,
+      OMASP.HE, CTY1S.HE, POSTI.HE, MUSTI.HE, FRAMERY.HE, TALLINK.HE, ATRAV.HE, TOKMAN.HE,
+      REG1V.HE, RAIVV.HE, LINDEX.HE, MEKKO.HE, EQV1V.HE, ENENTO.HE, PAMPALO.HE, VIK1V.HE,
+      FSECURE.HE, CAPMAN.HE, AUROORA.HE, UNITED.HE, LASTIK.HE, RELAIS.HE, ANORA.HE, KREATE.HE,
+      ICP1V.HE, PIHLIS.HE, REMEDY.HE, ASPO.HE, ETTE.HE, KOSKI.HE, CANATU.HE, TAALA.HE,
+      GOFORE.HE, REAKTOR.HE, SAVOX.HE, ORIOLA.HE, ALEX.HE, NOHO.HE, SOSI1.HE, VERK.HE,
+      TEM1V.HE, SFOODS.HE, HKFOODS.HE, DIGIA.HE, SRV1V.HE, ADMCM.HE, SSH1V.HE, CITYVA.HE,
+      DETEC.HE, KSL.HE, SBI.HE, ILKKA.HE, KPYOSK.HE, EXEL.HE, SUY1V.HE, CONSTI.HE,
+      FARON.HE, SITOWS.HE, LEMON.HE, NXTMH.HE, RAUTE.HE, ORTHEX.HE, NANOFH.HE, ASUNTO.HE,
+      APETIT.HE, CTH1V.HE, LUOTEA.HE, LOIHDE.HE, VIAFIN.HE, ARVOSK.HE, LAPWALL.HE, AFAGR.HE,
+      ESENSE.HE, TITAN.HE, BOREO.HE, TLT1V.HE, RAP1V.HE, KAMUX.HE,
+    ]
+  # Pohjoismaiden suurimmat (OMXS30, OBX, OMXC25 -indeksien yhtiöitä)
+  pohjoismaat:
+    [
+      ABB.ST, ALFA.ST, ASSA-B.ST, ATCO-A.ST, AZN.ST, BOL.ST,
+      ELUX-B.ST, ERIC-B.ST, ESSITY-B.ST, EVO.ST, GETI-B.ST, HEXA-B.ST,
+      HM-B.ST, INVE-B.ST, NIBE-B.ST, SAAB-B.ST, SAND.ST, SCA-B.ST,
+      SEB-A.ST, SHB-A.ST, SKA-B.ST, SKF-B.ST, SWED-A.ST, TEL2-B.ST,
+      VOLV-B.ST, EPI-A.ST, INDU-C.ST, ADDT-B.ST, LIFCO-B.ST, EQNR.OL,
+      DNB.OL, TEL.OL, MOWI.OL, NHY.OL, ORK.OL, YAR.OL,
+      AKRBP.OL, SALM.OL, KOG.OL, STB.OL, GJF.OL, SUBC.OL,
+      FRO.OL, TOM.OL, AUSS.OL, NOVO-B.CO, MAERSK-B.CO, DSV.CO,
+      CARL-B.CO, COLO-B.CO, DANSKE.CO, GMAB.CO, ORSTED.CO, VWS.CO,
+      PNDORA.CO, NSIS-B.CO, TRYG.CO, DEMANT.CO, ROCK-B.CO, AMBU-B.CO,
+      JYSK.CO, NKT.CO, ZEAL.CO,
+    ]
+  # ETF:t eli indeksiosuudet (Xetra, euroina)
+  etf:
+    - EUNL.DE    # iShares Core MSCI World – koko maailma
+    - SXR8.DE    # iShares Core S&P 500 – USA
+    - EXSA.DE    # iShares STOXX Europe 600 – Eurooppa
+    - IS3N.DE    # iShares Core MSCI EM IMI – kehittyvät markkinat
+    - QDV5.DE    # iShares MSCI India – Intia
+  # USA:n osakkeet: kalliit kulut 1000 €:n salkulle -> oletuksena pois
+  usa: []
+
+# ---------------- Botit ----------------
+botit:
+  trendi:
+    kaytossa: true        # Tarkistaa kerran viikossa, pitää osakkeita viikoista kuukausiin
+  rauhallinen:
+    kaytossa: true        # Tarkistaa kerran kuussa, pitää osakkeita kuukausista vuosiin
+  indeksi:
+    kaytossa: true        # Ostaa maailmanindeksin kerran ja pitää – realistinen vertailukohta kuluineen
+    etf: EUNL.DE
+
+# ---------------- Historiatesti ----------------
+historia_alku: "2016-01-01"

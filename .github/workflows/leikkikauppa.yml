@@ -1,0 +1,41 @@
+# Ajaa leikkikaupan joka arki-ilta GitHubin pilvessä ja päivittää raporttisivun.
+name: Päivittäinen leikkikauppa
+
+on:
+  schedule:
+    - cron: "45 17 * * 1-5"   # ma–pe 17:45 UTC = 19:45 Suomen talviaikaa (20:45 kesäaikaa)
+  workflow_dispatch:           # "Run workflow" -nappi käsin ajamiseen
+
+permissions:
+  contents: write
+
+concurrency:
+  group: leikkikauppa
+  cancel-in-progress: false
+
+jobs:
+  aja:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Asenna kirjastot
+        run: pip install -r requirements.txt
+
+      - name: Aja botit oikeilla kursseilla ja päivitä raporttisivu
+        run: python paivittainen.py --julkaise
+
+      - name: Tallenna salkkujen tila
+        run: |
+          git config user.name "sijoitusbotti"
+          git config user.email "sijoitusbotti@users.noreply.github.com"
+          git add tila arkisto docs
+          git diff --cached --quiet || git commit -m "Leikkikauppa $(date +%F)"
+          git pull --rebase
+          git push
