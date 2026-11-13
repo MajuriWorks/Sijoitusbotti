@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Leikkikauppa – päivä 1</title>
+<style>
+:root{--pinta:#fcfcfb;--taso:#f9f9f7;--teksti:#0b0b0b;--teksti2:#52514e;--himmea:#898781;--grid:#e1e0d9;--pohja:#c3c2b7;
+--s0:#2a78d6;--s1:#eb6834;--s2:#1baf7a;--s3:#eda100;--hyva:#006300;--paha:#c02c2c;--reuna:rgba(11,11,11,.10)}
+@media (prefers-color-scheme:dark){:root{--pinta:#1a1a19;--taso:#0d0d0d;--teksti:#f0efec;--teksti2:#c3c2b7;--grid:#2c2c2a;--pohja:#383835;
+--s0:#3987e5;--s1:#d95926;--s2:#199e70;--s3:#c98500;--hyva:#0ca30c;--paha:#e66767;--reuna:rgba(255,255,255,.10)}}
+body{font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--taso);color:var(--teksti);margin:0}
+main{max-width:1080px;margin:0 auto;padding:28px 20px 60px}
+h1{font-size:24px;margin:0} h2{font-size:18px;margin:34px 0 8px} h3{font-size:15px;margin:20px 0 6px}
+.meta{color:var(--teksti2);margin:4px 0 0} .selite{color:var(--teksti2);margin:4px 0 10px;max-width:760px}
+.tila{display:inline-block;padding:2px 8px;border-radius:4px;border:1px solid var(--reuna);font-size:12px;color:var(--teksti2);margin-left:8px;vertical-align:middle}
+table{border-collapse:collapse;background:var(--pinta);border:1px solid var(--reuna);border-radius:6px;width:100%;font-variant-numeric:tabular-nums}
+th,td{padding:6px 10px;text-align:left;border-bottom:1px solid var(--grid);vertical-align:top}
+th{font-weight:600;color:var(--teksti2);font-size:13px} table.pieni{font-size:13px} ul.pieni{font-size:13px;color:var(--teksti2)}
+table.luvut td:not(:first-child),table.luvut th:not(:first-child){text-align:right}
+.osta{color:var(--hyva)} .myy{color:var(--paha)} .tyhja{background:var(--pinta);border:1px solid var(--reuna);border-radius:6px;padding:14px}
+.kaaviokehys{position:relative;background:var(--pinta);border:1px solid var(--reuna);border-radius:6px;padding:10px;margin-bottom:12px}
+.kaavio{width:100%;height:auto;display:block}
+.grid{stroke:var(--grid);stroke-width:1} .pohja{stroke:var(--pohja);stroke-width:1}
+.akseli{fill:var(--himmea);font-size:11px} .nimi{fill:var(--teksti);font-size:12px}
+.sarja{stroke-width:2;stroke-linejoin:round} .s0,.t0{stroke:var(--s0);fill:var(--s0)} .s1,.t1{stroke:var(--s1);fill:var(--s1)}
+.s2,.t2{stroke:var(--s2);fill:var(--s2)} .s3,.t3{stroke:var(--s3);fill:var(--s3)} polyline.sarja{fill:none}
+.risti{stroke:var(--pohja);stroke-width:1}
+.vihje{position:absolute;pointer-events:none;background:var(--pinta);border:1px solid var(--reuna);border-radius:6px;padding:6px 10px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap}
+.vihje b{display:block;margin-bottom:2px}
+.jaksot{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px} .jaksot h3{margin-top:4px}
+a{color:var(--s0)}
+footer{margin-top:40px;color:var(--himmea);font-size:12px}
+</style></head><body><main>
+<h1>Leikkikauppa – päivä 1<span class="tila">leikkikauppa</span></h1>
+<p class="meta">Kurssit 13.11.2026 asti · luotu 13.11.2026 22:23 · <a href="arkisto/">Raporttiarkisto</a> · <a href="historiatesti.html">Historiatesti</a></p>
+<h2>Toimeksiannot seuraavalle kauppapäivälle</h2>
+<p class="selite">Leikkikaupassa botti toteuttaa nämä itse huomisen avauskurssiin. Kun siirryt oikeaan rahaan, tee nämä Nordnetissa rajahintatoimeksiantoina.</p>
+<table class="toimeksiannot"><thead><tr><th>Botti</th><th>Suunta</th><th>Osake</th><th>Määrä</th><th>Rajahinta n.</th><th>Summa n.</th><th>Kulu n.</th><th>Perustelu</th></tr></thead><tbody><tr><td>Trendi</td><td><b class="osta">OSTA</b></td><td><b>GMAB.CO</b></td><td>1 kpl</td><td>465.87 €</td><td>461 €</td><td>10.15 €</td><td>3 kk nousu +63.9%, kurssi +69.2% yli 200 pv keskiarvon</td></tr><tr><td>Trendi</td><td><b class="osta">OSTA</b></td><td><b>ORNBV.HE</b></td><td>4 kpl</td><td>103.73 €</td><td>411 €</td><td>9.00 €</td><td>3 kk nousu +32.4%, kurssi +36.5% yli 200 pv keskiarvon</td></tr><tr><td>Rauhallinen</td><td><b class="osta">OSTA</b></td><td><b>KREATE.HE</b></td><td>16 kpl</td><td>29.39 €</td><td>466 €</td><td>9.00 €</td><td>12 kk nousu +237.9%, heilunta 58%/v</td></tr><tr><td>Rauhallinen</td><td><b class="osta">OSTA</b></td><td><b>EXEL.HE</b></td><td>30 kpl</td><td>16.16 €</td><td>480 €</td><td>9.00 €</td><td>12 kk nousu +177.5%, heilunta 47%/v</td></tr><tr><td>Indeksi</td><td><b class="osta">OSTA</b></td><td><b>EUNL.DE</b></td><td>7 kpl</td><td>131.74 €</td><td>913 €</td><td>15.00 €</td><td>Osta ja pidä: koko maailman osakemarkkina</td></tr></tbody></table>
+<h2>Salkkujen arvo</h2>
+<div class="kaaviokehys"><svg viewBox="0 0 900 320" class="kaavio" role="img" aria-label="Salkkujen arvo ajan yli"><line x1="56" x2="710" y1="292.0" y2="292.0" class="grid"/><text x="48" y="296.0" class="akseli" text-anchor="end">999 €</text><line x1="56" x2="710" y1="223.0" y2="223.0" class="grid"/><text x="48" y="227.0" class="akseli" text-anchor="end">1 000 €</text><line x1="56" x2="710" y1="154.0" y2="154.0" class="grid"/><text x="48" y="158.0" class="akseli" text-anchor="end">1 000 €</text><line x1="56" x2="710" y1="85.0" y2="85.0" class="grid"/><text x="48" y="89.0" class="akseli" text-anchor="end">1 000 €</text><line x1="56" x2="710" y1="16.0" y2="16.0" class="grid"/><text x="48" y="20.0" class="akseli" text-anchor="end">1 001 €</text><line x1="56" x2="710" y1="292" y2="292" class="pohja"/><polyline points="56.0,154.0" class="sarja s0" fill="none"/><polyline points="56.0,154.0" class="sarja s1" fill="none"/><polyline points="56.0,154.0" class="sarja s2" fill="none"/><polyline points="56.0,154.0" class="sarja s3" fill="none"/><text x="718" y="158.0" class="nimi"><tspan class="t3">●</tspan> Helsinki 1 000 €</text><text x="718" y="174.0" class="nimi"><tspan class="t2">●</tspan> Indeksi 1 000 €</text><text x="718" y="190.0" class="nimi"><tspan class="t1">●</tspan> Rauhallinen 1 000 €</text><text x="718" y="206.0" class="nimi"><tspan class="t0">●</tspan> Trendi 1 000 €</text><line class="risti" x1="0" x2="0" y1="16" y2="292" visibility="hidden"/><rect class="osuma" x="56" y="16" width="654" height="276" fill="transparent"/></svg><script>const KD={"paivat": ["13.11.2026"], "sarjat": {"Trendi": [1000.0], "Rauhallinen": [1000.0], "Indeksi": [1000.0], "Helsinki": [1000.0]}, "ml": 56, "lev": 654, "W": 900};</script><div class="vihje" hidden></div></div>
+<table class="luvut"><thead><tr><th></th><th>Trendi</th><th>Rauhallinen</th><th>Indeksi</th><th>Helsinki</th></tr></thead><tbody></tbody></table>
+<p class="selite">Helsinki = kaikki seuratut Helsingin osakkeet tasapainoisesti ilman kuluja. Indeksi = maailmanindeksi ostettuna ja pidettynä, kuluineen. Aktiivisen botin pitää voittaa molemmat kulujen jälkeen, muuten oikeaa rahaa ei kannata antaa sille.</p>
+<h2>Tuotot jaksoittain</h2><div class="jaksot"><div><h3>Viikoittain</h3><table class="luvut pieni"><thead><tr><th></th><th>Trendi</th><th>Rauhallinen</th><th>Indeksi</th><th>Helsinki</th></tr></thead><tbody><tr><td>vk 46/2026</td><td>+0.0%</td><td>+0.0%</td><td>+0.0%</td><td>+0.0%</td></tr></tbody></table></div><div><h3>Kuukausittain</h3><table class="luvut pieni"><thead><tr><th></th><th>Trendi</th><th>Rauhallinen</th><th>Indeksi</th><th>Helsinki</th></tr></thead><tbody><tr><td>11/2026</td><td>+0.0%</td><td>+0.0%</td><td>+0.0%</td><td>+0.0%</td></tr></tbody></table></div><div><h3>Vuosittain</h3><table class="luvut pieni"><thead><tr><th></th><th>Trendi</th><th>Rauhallinen</th><th>Indeksi</th><th>Helsinki</th></tr></thead><tbody><tr><td>2026</td><td>+0.0%</td><td>+0.0%</td><td>+0.0%</td><td>+0.0%</td></tr></tbody></table></div></div>
+<h2>Trendi</h2><p class="selite">Viikoittain tarkistettava trendinseuraaja. Ostaa osakkeita, joiden kurssi on nousutrendissä (yli 200 pv keskiarvon) ja jotka ovat nousseet eniten 3 kk aikana. Myy, kun trendi katkeaa (alle 100 pv keskiarvon) tai osake putoaa kärkijoukosta.</p>
+<table class=""><thead><tr><th>Omistus</th><th>Kpl</th><th>Hankinta</th><th>Nyt</th><th>Arvo</th><th>Muutos</th><th>Ostettu</th></tr></thead><tbody><tr><td>Käteinen</td><td></td><td></td><td></td><td>1000 €</td><td></td><td></td></tr></tbody></table>
+<h2>Rauhallinen</h2><p class="selite">Kuukausittain tarkistettava pitkän aikavälin botti. Valitsee osakkeita, jotka ovat nousseet tasaisesti viimeisen vuoden (12 kk tuotto suhteessa heiluntaan). Jos koko markkina on laskussa, jää käteiselle. Vaihtaa omistuksia harvoin.</p>
+<table class=""><thead><tr><th>Omistus</th><th>Kpl</th><th>Hankinta</th><th>Nyt</th><th>Arvo</th><th>Muutos</th><th>Ostettu</th></tr></thead><tbody><tr><td>Käteinen</td><td></td><td></td><td></td><td>1000 €</td><td></td><td></td></tr></tbody></table>
+<h2>Indeksi</h2><p class="selite">Ostaa maailmanindeksi-ETF:n kerran ja pitää sen. Ei yritä olla fiksu – juuri siksi se on reilu vertailukohta: aktiivisen botin pitää voittaa tämä kulujen jälkeen.</p>
+<table class=""><thead><tr><th>Omistus</th><th>Kpl</th><th>Hankinta</th><th>Nyt</th><th>Arvo</th><th>Muutos</th><th>Ostettu</th></tr></thead><tbody><tr><td>Käteinen</td><td></td><td></td><td></td><td>1000 €</td><td></td><td></td></tr></tbody></table>
+<footer>Leikkirahasimulaatio. Ei sijoitusneuvontaa. Menneisyyden tuotto ei takaa tulevaa.</footer>
+</main>
+<script>
+(function(){
+ const svg=document.querySelector('.kaavio'); if(!svg||typeof KD==='undefined')return;
+ const vihje=document.querySelector('.vihje'), risti=svg.querySelector('.risti'), osuma=svg.querySelector('.osuma');
+ const n=KD.paivat.length, nimet=Object.keys(KD.sarjat);
+ osuma.addEventListener('mousemove',e=>{
+   const r=svg.getBoundingClientRect(), sx=KD.W/r.width, x=(e.clientX-r.left)*sx;
+   const i=Math.max(0,Math.min(n-1,Math.round((x-KD.ml)/KD.lev*(n-1))));
+   const px=KD.ml+KD.lev*i/(n-1); risti.setAttribute('x1',px); risti.setAttribute('x2',px); risti.setAttribute('visibility','visible');
+   vihje.innerHTML='<b>'+KD.paivat[i]+'</b>'+nimet.map((k,j)=>'<span class="t'+j+'" style="color:var(--s'+j+')">●</span> '+k+': '+KD.sarjat[k][i].toLocaleString('fi-FI')+' €').join('<br>');
+   vihje.hidden=false; const vx=(px/sx)+16; vihje.style.left=Math.min(vx, r.width-vihje.offsetWidth-4)+'px'; vihje.style.top='20px';
+ });
+ osuma.addEventListener('mouseleave',()=>{vihje.hidden=true; risti.setAttribute('visibility','hidden');});
+})();
+</script></body></html>
