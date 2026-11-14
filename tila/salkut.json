@@ -1,0 +1,139 @@
+{
+ "versio": 3,
+ "aloitettu": "2026-11-13",
+ "kuluprofiili": "nordnet",
+ "alkupaaoma": 1000,
+ "botit": {
+  "lyhyt": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "AMBU-B.CO",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "pisteet +1.04, 20 pv nousu +17.0% | uutinen (+): UBS raises its price target for Ambu to DKK 93 (72), reiterates neutral",
+     "annettu": "2026-11-13",
+     "rajahinta": 12.3839,
+     "voimassa": 3
+    },
+    {
+     "ticker": "TELIA1.HE",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "pisteet +0.77, 20 pv nousu +22.7% | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
+     "annettu": "2026-11-13",
+     "rajahinta": 4.5299,
+     "voimassa": 3
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "pitka": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "TELIA1.HE",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +78.2%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
+     "annettu": "2026-11-13",
+     "rajahinta": 4.5299,
+     "voimassa": 3
+    },
+    {
+     "ticker": "EQNR.OL",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +98.1%, heilunta 35%/v | uutinen (+): Equinor Rises as Higher Oil Prices and Ongoing Buybacks Support Shares",
+     "annettu": "2026-11-13",
+     "rajahinta": 38.9551,
+     "voimassa": 3
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "yhdistelma_pitka": {
+   "kateinen": 600.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "TELIA1.HE",
+     "suunta": "OSTA",
+     "summa": 588.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +78.2%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
+     "annettu": "2026-11-13",
+     "rajahinta": 4.5299,
+     "voimassa": 3
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 600.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "yhdistelma_lyhyt": {
+   "kateinen": 400.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "AMBU-B.CO",
+     "suunta": "OSTA",
+     "summa": 392.0,
+     "kpl": 0,
+     "syy": "pisteet +1.04, 20 pv nousu +17.0% | uutinen (+): UBS raises its price target for Ambu to DKK 93 (72), reiterates neutral",
+     "annettu": "2026-11-13",
+     "rajahinta": 12.3839,
+     "voimassa": 3
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 400.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "indeksi": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "EUNL.DE",
+     "suunta": "OSTA",
+     "summa": 980.0,
+     "kpl": 0,
+     "syy": "Osta ja pidä: koko maailman osakemarkkina",
+     "annettu": "2026-11-13",
+     "rajahinta": 131.7444,
+     "voimassa": 3
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  }
+ },
+ "viimeisin_kasitelty": "2026-11-13"
+}
