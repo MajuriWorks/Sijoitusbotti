@@ -28,7 +28,7 @@ class Moottori:
         huomiot: list[str] = []
 
         # 1) Eilen annetut toimeksiannot toteutuvat tämän päivän avauksessa
-        self.valittaja.toteuta(salkku, paiva, avaus)
+        self.valittaja.toteuta(salkku, paiva, avaus, paneeli.matala.loc[paiva])
         self.valittaja.paivita_huiput(salkku, paatos)
 
         # 2) Stop-loss tarkistetaan joka päivä
@@ -36,10 +36,13 @@ class Moottori:
         myytavana = {o.ticker for o in salkku.odottavat if o.suunta == "MYY"}
         for t, p in (salkku.positiot.items() if getattr(strategia, "kayta_stop_lossia", True) else []):
             h = paatos.get(t)
-            if t not in myytavana and h is not None and not pd.isna(h) and h <= p.huippu * (1 - sl):
+            if t in myytavana or h is None or pd.isna(h):
+                continue
+            raja, syy = self.myyntiraja(p, sl)
+            if h <= raja:
                 salkku.odottavat.append(Toimeksianto(
                     t, "MYY", kpl=p.kpl, annettu=str(paiva.date()),
-                    syy=f"Stop-loss: kurssi {h / p.huippu - 1:.1%} huipusta"))
+                    syy=f"{syy}: kurssi {h / p.huippu - 1:.1%} huipusta, {h / p.hankintahinta - 1:+.1%} ostohinnasta"))
                 myytavana.add(t)
 
         # 3) Strategian päätös
@@ -49,6 +52,21 @@ class Moottori:
 
         salkku.arvohistoria[str(paiva.date())] = round(salkku.arvo(paatos), 2)
         return huomiot
+
+    @staticmethod
+    def myyntiraja(p, sl: float) -> tuple[float, str]:
+        """Liukuva myyntiraja: tavallinen stop-loss huipusta, mutta voiton kasvaessa raja nousee
+        niin, että jo saavutettu voitto lukitaan:
+          huippu +10 % ostohinnasta -> raja vähintään ostohinta (ei tappiota)
+          huippu +20 % -> raja vähintään +10 %, huippu +30 % -> vähintään +20 % jne."""
+        raja, syy = p.huippu * (1 - sl), "Stop-loss"
+        nousu = p.huippu / p.hankintahinta - 1
+        if nousu >= 0.10:
+            askel = int(nousu * 10 + 1e-9)          # 1 = +10 %, 2 = +20 % ...
+            lukko = p.hankintahinta * (1 + 0.10 * (askel - 1))
+            if lukko > raja:
+                raja, syy = lukko, f"Voitto lukittu (raja {0.10 * (askel - 1):+.0%} ostohinnasta)"
+        return raja, syy
 
     # ------------------------------------------------------------------ päätös
     def _paata(self, salkku, strategia, paiva, paatos, myytavana) -> list[str]:
@@ -73,7 +91,8 @@ class Moottori:
                 t, "MYY", kpl=salkku.positiot[t].kpl, annettu=pv, syy=ehd.perustelut.get(t, "")))
 
         pidetaan = omistukset & ehd.pidettavat
-        vapaat = n - len(pidetaan)
+        odottavat_ostot = {o.ticker: o.summa for o in salkku.odottavat if o.suunta == "OSTA"}
+        vapaat = n - len(pidetaan) - len(odottavat_ostot)
         if vapaat <= 0:
             return huomiot
 
@@ -84,9 +103,10 @@ class Moottori:
                 s = salkku.positiot[t].kpl * float(paatos[t])
                 raha += s - self.kulut.kulu(t, s)
         varaus = (self.riskit["kateisvara_prosentti"] / 100) * salkku.arvo(paatos)
-        raha -= varaus
+        raha -= varaus + sum(odottavat_ostot.values())
 
-        uudet = [t for t in ehd.ostettavat if t not in pidetaan and t not in myytavana][:vapaat]
+        uudet = [t for t in ehd.ostettavat
+                 if t not in pidetaan and t not in myytavana and t not in odottavat_ostot][:vapaat]
         if not uudet:
             return huomiot
         max_kulu = self.riskit["max_kulu_prosentti"]
@@ -105,8 +125,10 @@ class Moottori:
                 huomiot.append(f"{pv}: ohitettiin {t} – {osuus:.0f} € on liian pieni kauppa "
                                f"(kulut > {max_kulu} %, raja {raja:.0f} €)")
                 continue
+            # Rajahinta: enintään 1 % yli päätöskurssin -> ei jahdata uutisen aiheuttamaa hyppyä
             salkku.odottavat.append(Toimeksianto(
-                t, "OSTA", summa=osuus, annettu=pv, syy=ehd.perustelut.get(t, "")))
+                t, "OSTA", summa=osuus, annettu=pv, syy=ehd.perustelut.get(t, ""),
+                rajahinta=round(float(paatos[t]) * 1.01, 4)))
         return huomiot
 
     # ------------------------------------------------------------------ jakso

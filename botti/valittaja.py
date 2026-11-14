@@ -44,6 +44,8 @@ class Toimeksianto:
     kpl: int = 0           # myynneille: kappalemäärä
     syy: str = ""
     annettu: str = ""      # päivämäärä
+    rajahinta: float = 0.0 # ostoille: korkein hyväksytty hinta (0 = markkinahintaan)
+    voimassa: int = 3      # ostoille: montako kauppapäivää rajahintatoimeksianto odottaa
 
 
 @dataclass
@@ -111,8 +113,11 @@ class LeikkiValittaja:
     def __init__(self, kulut: Kulumalli):
         self.kulut = kulut
 
-    def toteuta(self, salkku: Salkku, paiva: pd.Timestamp, avaus: pd.Series) -> list[Kauppa]:
-        """Toteuttaa odottavat toimeksiannot päivän avauskurssiin. Myynnit ensin."""
+    def toteuta(self, salkku: Salkku, paiva: pd.Timestamp, avaus: pd.Series,
+                matala: pd.Series | None = None) -> list[Kauppa]:
+        """Toteuttaa odottavat toimeksiannot päivän avauskurssiin. Myynnit ensin.
+        Ostot ovat rajahintatoimeksiantoja: jos kurssi avaa rajan yläpuolella, osto toteutuu
+        rajahintaan vain, jos päivän alin kurssi käy rajassa. Muuten toimeksianto odottaa."""
         tehdyt, jaljelle = [], []
         jarjestys = sorted(salkku.odottavat, key=lambda o: o.suunta != "MYY")
         for o in jarjestys:
@@ -122,6 +127,16 @@ class LeikkiValittaja:
                 continue
             hinta = float(hinta)
             ps = paiva.strftime("%Y-%m-%d")
+            if o.suunta == "OSTA" and o.rajahinta > 0 and hinta > o.rajahinta:
+                # Avaus rajahinnan yläpuolella: toteutuu vain, jos kurssi käy päivän aikana rajassa
+                alin = matala.get(o.ticker) if matala is not None else None
+                if alin is not None and not pd.isna(alin) and float(alin) <= o.rajahinta:
+                    hinta = o.rajahinta
+                else:
+                    o.voimassa -= 1
+                    if o.voimassa > 0:
+                        jaljelle.append(o)   # odottaa notkahdusta
+                    continue
             if o.suunta == "MYY":
                 pos = salkku.positiot.get(o.ticker)
                 if not pos:

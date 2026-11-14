@@ -44,6 +44,11 @@ def tunnusluvut(sarja: pd.Series, alkupaaoma: float, salkku: Salkku | None = Non
         d["Kauppoja"] = str(len(salkku.kaupat))
         d["Kulut yhteensä"] = f"{salkku.kulut_yht:,.0f} €".replace(",", " ")
         d["Voitollisia myyntejä"] = f"{voittavat}/{len(myynnit)}" if myynnit else "–"
+        voitot = [k.voitto for k in myynnit if k.voitto > 0]
+        tappiot = [k.voitto for k in myynnit if k.voitto <= 0]
+        d["Keskim. voitto / kauppa"] = f"{np.mean(voitot):+.0f} €" if voitot else "–"
+        d["Keskim. tappio / kauppa"] = f"{np.mean(tappiot):+.0f} €" if tappiot else "–"
+        d["Suurin tappio"] = f"{min(tappiot):+.0f} €" if tappiot else "–"
         d["Keskim. pitoaika"] = (f"{np.mean([k.pitoaika_pv for k in myynnit]):.0f} pv" if myynnit else "–")
     return d
 
@@ -199,8 +204,8 @@ def html_raportti(otsikko: str, tila: str, botit: list[dict], vertailu: pd.Serie
             for o in b["salkku"].odottavat:
                 h = float(hinnat.get(o.ticker, np.nan))
                 if o.suunta == "OSTA":
-                    kpl = int(o.summa // h) if h > 0 else 0
-                    raja = h * 1.01
+                    raja = o.rajahinta or h * 1.01
+                    kpl = int(o.summa // raja) if raja > 0 else 0
                 else:
                     kpl = o.kpl
                     raja = h * 0.99
@@ -211,7 +216,8 @@ def html_raportti(otsikko: str, tila: str, botit: list[dict], vertailu: pd.Serie
         osat.append("<h2>Toimeksiannot seuraavalle kauppapäivälle</h2>")
         if rivit:
             osat.append('<p class="selite">Leikkikaupassa botti toteuttaa nämä itse huomisen avauskurssiin. '
-                        'Kun siirryt oikeaan rahaan, tee nämä Nordnetissa rajahintatoimeksiantoina.</p>')
+                        'Ostot ovat rajahintatoimeksiantoja (enintään 1 % yli päätöskurssin, voimassa 3 päivää), '
+                        'myynnit tehdään markkinahintaan. Oikealla rahalla tee samat toimeksiannot Nordnetissa.</p>')
             osat.append(_taulukko(rivit, ["Botti", "Suunta", "Osake", "Määrä", "Rajahinta n.", "Summa n.",
                                           "Kulu n.", "Perustelu"], "toimeksiannot"))
         else:

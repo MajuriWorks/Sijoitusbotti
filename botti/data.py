@@ -51,12 +51,19 @@ class Paneeli:
     paatos: pd.DataFrame
     vaihto: pd.DataFrame                      # päivävaihto euroina
     puuttuvat: list[str] = field(default_factory=list)
+    matala: pd.DataFrame | None = None        # päivän alin kurssi (rajahintaostoja varten)
+
+    def __post_init__(self):
+        if self.matala is None:
+            self.matala = pd.concat([self.avaus, self.paatos]).groupby(level=0).min().reindex(self.paatos.index)
 
     def asti(self, paiva) -> "Paneeli":
-        return Paneeli(self.avaus.loc[:paiva], self.paatos.loc[:paiva], self.vaihto.loc[:paiva], self.puuttuvat)
+        return Paneeli(self.avaus.loc[:paiva], self.paatos.loc[:paiva], self.vaihto.loc[:paiva],
+                       self.puuttuvat, self.matala.loc[:paiva])
 
     def ilman_viimeista(self) -> "Paneeli":
-        return Paneeli(self.avaus.iloc[:-1], self.paatos.iloc[:-1], self.vaihto.iloc[:-1], self.puuttuvat)
+        return Paneeli(self.avaus.iloc[:-1], self.paatos.iloc[:-1], self.vaihto.iloc[:-1],
+                       self.puuttuvat, self.matala.iloc[:-1])
 
     @property
     def tickerit(self) -> list[str]:
@@ -128,21 +135,21 @@ def lataa_paneeli(tickerit: list[str], alku: str, cache_dir: str | Path = "data"
         fx["DKK"] = pd.Series(7.46, index=pd.bdate_range(alku, pd.Timestamp.today()))  # kruunu on sidottu euroon
 
     data = _lataa_yahoo(tickerit, alku, cache_dir)
-    avaus, paatos, vaihto, puuttuvat = {}, {}, {}, []
+    avaus, paatos, vaihto, puuttuvat, matala = {}, {}, {}, [], {}
     for t in tickerit:
         df = data.get(t)
         if df is None or df.empty:
             puuttuvat.append(t)
             continue
         v = valuutta(t)
-        o, c = df["Open"], df["Close"]
+        o, c, lo = df["Open"], df["Close"], df["Low"]
         if v != "EUR":
             if v not in fx:
                 puuttuvat.append(t)
                 continue
             k = fx[v].reindex(df.index).ffill().bfill()   # EURxxx: 1 € = k xxx
-            o, c = o / k, c / k
-        avaus[t], paatos[t], vaihto[t] = o, c, c * df["Volume"]
+            o, c, lo = o / k, c / k, lo / k
+        avaus[t], paatos[t], vaihto[t], matala[t] = o, c, c * df["Volume"], lo
 
     if puuttuvat:
         print(f"  ! Ei kursseja {len(puuttuvat)} tunnukselle: {', '.join(puuttuvat)}")
@@ -150,17 +157,18 @@ def lataa_paneeli(tickerit: list[str], alku: str, cache_dir: str | Path = "data"
         # Ei jatketa vajaalla datalla, ettei leikkisalkku tee päätöksiä puuttuvien kurssien varassa.
         raise SystemExit(f"Kurssit saatiin vain {len(paatos)}/{len(tickerit)} tunnukselle – keskeytetään. "
                          "Yritä myöhemmin uudelleen.")
-    return _kokoa(avaus, paatos, vaihto, puuttuvat)
+    return _kokoa(avaus, paatos, vaihto, puuttuvat, matala)
 
 
-def _kokoa(avaus: dict, paatos: dict, vaihto: dict, puuttuvat=None) -> Paneeli:
+def _kokoa(avaus: dict, paatos: dict, vaihto: dict, puuttuvat=None, matala=None) -> Paneeli:
     p = pd.DataFrame(paatos).sort_index()
     a = pd.DataFrame(avaus).reindex(p.index)
     v = pd.DataFrame(vaihto).reindex(p.index)
     # Päätöskurssi viedään eteenpäin enintään 5 päivää (pyhäpäivät eri pörsseissä).
     # Avauskurssia EI täytetä: jos osake ei käy kauppaa, toimeksianto odottaa.
     p = p.ffill(limit=5)
-    return Paneeli(a, p, v, list(puuttuvat or []))
+    m = pd.DataFrame(matala).reindex(p.index) if matala else None
+    return Paneeli(a, p, v, list(puuttuvat or []), m)
 
 
 # ---------------------------------------------------------------- Testidata
@@ -173,7 +181,7 @@ def synteettinen_paneeli(tickerit: list[str], alku="2016-01-01", loppu="2026-11-
     markkina_tuotto = rng.normal(0.0003, 0.010, n)
     for alku_i in (int(n * 0.42), int(n * 0.65)):
         markkina_tuotto[alku_i:alku_i + 60] -= 0.004
-    avaus, paatos, vaihto = {}, {}, {}
+    avaus, paatos, vaihto, matala = {}, {}, {}, {}
     for t in tickerit:
         drift = rng.normal(0.0001, 0.0004)
         beta = rng.uniform(0.6, 1.4)
@@ -184,6 +192,7 @@ def synteettinen_paneeli(tickerit: list[str], alku="2016-01-01", loppu="2026-11-
         gap = rng.normal(0, 0.004, n)
         paatos[t] = pd.Series(hinta, paivat)
         avaus[t] = pd.Series(np.r_[hinta[0], hinta[:-1]] * np.exp(gap), paivat)
+        matala[t] = np.minimum(avaus[t], paatos[t]) * (1 - np.abs(rng.normal(0, 0.008, n)))
         taso = 10 ** rng.uniform(4.5, 7.5)            # 30 k€ ... 30 M€ päivässä
         vaihto[t] = pd.Series(taso * rng.lognormal(0, 0.5, n), paivat)
-    return _kokoa(avaus, paatos, vaihto)
+    return _kokoa(avaus, paatos, vaihto, None, matala)
