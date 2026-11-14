@@ -1,0 +1,84 @@
+{
+ "aloitettu": "2026-11-13",
+ "kuluprofiili": "nordnet",
+ "alkupaaoma": 1000,
+ "botit": {
+  "trendi": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "GMAB.CO",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "3 kk nousu +63.9%, kurssi +69.2% yli 200 pv keskiarvon",
+     "annettu": "2026-11-13"
+    },
+    {
+     "ticker": "ORNBV.HE",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "3 kk nousu +32.4%, kurssi +36.5% yli 200 pv keskiarvon",
+     "annettu": "2026-11-13"
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "rauhallinen": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "KREATE.HE",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +237.9%, heilunta 58%/v",
+     "annettu": "2026-11-13"
+    },
+    {
+     "ticker": "EXEL.HE",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +177.5%, heilunta 47%/v",
+     "annettu": "2026-11-13"
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "indeksi": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "EUNL.DE",
+     "suunta": "OSTA",
+     "summa": 980.0,
+     "kpl": 0,
+     "syy": "Osta ja pidä: koko maailman osakemarkkina",
+     "annettu": "2026-11-13"
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  }
+ },
+ "viimeisin_kasitelty": "2026-11-13"
+}

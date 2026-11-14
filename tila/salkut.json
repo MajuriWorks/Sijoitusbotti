@@ -1,26 +1,27 @@
 {
+ "versio": 3,
  "aloitettu": "2026-11-13",
  "kuluprofiili": "nordnet",
  "alkupaaoma": 1000,
  "botit": {
-  "trendi": {
+  "lyhyt": {
    "kateinen": 1000.0,
    "positiot": {},
    "odottavat": [
     {
-     "ticker": "GMAB.CO",
+     "ticker": "AMBU-B.CO",
      "suunta": "OSTA",
      "summa": 490.0,
      "kpl": 0,
-     "syy": "3 kk nousu +63.9%, kurssi +69.2% yli 200 pv keskiarvon",
+     "syy": "pisteet +1.00, 20 pv nousu +17.0% | uutinen (+): DNB Carnegie raises price target for Ambu to DKK 110 (105), reiterates buy",
      "annettu": "2026-11-13"
     },
     {
-     "ticker": "ORNBV.HE",
+     "ticker": "AZN.ST",
      "suunta": "OSTA",
      "summa": 490.0,
      "kpl": 0,
-     "syy": "3 kk nousu +32.4%, kurssi +36.5% yli 200 pv keskiarvon",
+     "syy": "pisteet +0.91, 20 pv nousu +14.3% | uutinen (+): AstraZeneca Cloud Win and JPMorgan Upgrade Put SAP's AI Story on the Front Foot",
      "annettu": "2026-11-13"
     }
    ],
@@ -31,24 +32,24 @@
    },
    "viimeisin_paatos": "2026-11-13"
   },
-  "rauhallinen": {
+  "pitka": {
    "kateinen": 1000.0,
    "positiot": {},
    "odottavat": [
     {
-     "ticker": "KREATE.HE",
+     "ticker": "AKRBP.OL",
      "suunta": "OSTA",
      "summa": 490.0,
      "kpl": 0,
-     "syy": "12 kk nousu +237.9%, heilunta 58%/v",
+     "syy": "12 kk nousu +63.3%, heilunta 32%/v | uutinen (+): Oddo raises price target for Aker BP to NOK 340 (330), reiterates neutral - BN",
      "annettu": "2026-11-13"
     },
     {
-     "ticker": "EXEL.HE",
+     "ticker": "EQNR.OL",
      "suunta": "OSTA",
      "summa": 490.0,
      "kpl": 0,
-     "syy": "12 kk nousu +177.5%, heilunta 47%/v",
+     "syy": "12 kk nousu +98.1%, heilunta 35%/v | uutinen (−): European Equities Traded in the US as American Depositary Receipts Decline in Tuesday Trad",
      "annettu": "2026-11-13"
     }
    ],
@@ -56,6 +57,46 @@
    "kulut_yht": 0.0,
    "arvohistoria": {
     "2026-11-13": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "yhdistelma_pitka": {
+   "kateinen": 600.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "AKRBP.OL",
+     "suunta": "OSTA",
+     "summa": 588.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +63.3%, heilunta 32%/v | uutinen (+): Oddo raises price target for Aker BP to NOK 340 (330), reiterates neutral - BN",
+     "annettu": "2026-11-13"
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 600.0
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "yhdistelma_lyhyt": {
+   "kateinen": 400.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "AMBU-B.CO",
+     "suunta": "OSTA",
+     "summa": 392.0,
+     "kpl": 0,
+     "syy": "pisteet +1.00, 20 pv nousu +17.0% | uutinen (+): DNB Carnegie raises price target for Ambu to DKK 110 (105), reiterates buy",
+     "annettu": "2026-11-13"
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 400.0
    },
    "viimeisin_paatos": "2026-11-13"
   },
