@@ -120,7 +120,7 @@ uutiset:
     sisapiiri: true          # johdon liiketoimet
     maailma: true            # maailman tapahtumat ja markkinatunnelma
     inderes_foorumi: true    # mistä yhtiöistä keskustellaan
-    reddit: true
+    reddit: false            # Reddit estää GitHubin palvelimet (403) -> pois päältä
   maailma_haut:
     - pörssi
     - osakemarkkinat

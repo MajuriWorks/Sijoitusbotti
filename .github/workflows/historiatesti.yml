@@ -1,10 +1,10 @@
 # Historiatesti oikeilla kursseilla. Aja käsin (Actions -> Historiatesti -> Run workflow).
-# Ajetaan myös automaattisesti kuun ensimmäisenä lauantaina.
+# Ajetaan myös automaattisesti joka lauantai.
 name: Historiatesti
 
 on:
   schedule:
-    - cron: "0 8 1-7 * 6"
+    - cron: "0 8 * * 6"
   workflow_dispatch:
     inputs:
       alku:

@@ -31,6 +31,10 @@ def _hiipuva(impulssit: pd.DataFrame, puoliintuminen: float) -> pd.DataFrame:
     return pd.DataFrame(out, index=impulssit.index, columns=impulssit.columns)
 
 
+def _onko_maailma(u: Uutinen) -> bool:
+    return u.lahde in ("maailma", "testi") and not u.tickerit or u.tyyppi == "maailma"
+
+
 class Signaalit:
     def __init__(self, uutiset: list[Uutinen], paivat: pd.DatetimeIndex, tickerit: list[str]):
         self.paivat, self.tickerit = paivat, tickerit
@@ -46,9 +50,11 @@ class Signaalit:
                 continue
             p = paivat[i]
             arvo = u.tunnelma * u.paino
-            if u.tyyppi == "maailma" or (not u.tickerit and u.tyyppi != "foorumi"):
+            if _onko_maailma(u):
                 maailma.iloc[i] += arvo
                 continue
+            if not u.tickerit:
+                continue      # yleishaun uutinen, jossa ei mainita seurattua yhtiötä
             for t in u.tickerit:
                 if t not in yhtio.columns:
                     continue
@@ -72,7 +78,7 @@ class Signaalit:
         # Maailma: keskiarvo, jotta uutismäärä ei vääristä
         lkm = pd.Series(0.0, index=paivat)
         for u in uutiset:
-            if u.tyyppi == "maailma" or (not u.tickerit and u.tyyppi != "foorumi"):
+            if _onko_maailma(u):
                 i = self._paiva_indeksi(u.aika)
                 if i is not None:
                     lkm.iloc[i] += 1
