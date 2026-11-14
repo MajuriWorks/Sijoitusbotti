@@ -123,6 +123,9 @@ def main():
         else:
             print("Kerätään uutisia...")
             uudet, lahdetila = uutismoduuli.keraa(cfg, cfg["tickerit"])
+            n = uutismoduuli.uudelleentulkitse_arkisto(uutismoduuli.lataa_nimet(cfg["tickerit"]))
+            if n:
+                print(f"  {n} aiempaa uutista tulkittu uudelleen")
         uutismoduuli.tallenna(uudet)
         print(f"  {len(uudet)} uutta uutista/viestiä")
     sig = Signaalit(uutismoduuli.lataa_arkisto(), paneeli.paatos.index, paneeli.tickerit)

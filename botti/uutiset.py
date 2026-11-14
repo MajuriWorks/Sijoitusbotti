@@ -334,9 +334,12 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
         if t.endswith(".DE"):
             continue  # ETF:t: ei yhtiöuutisia
         if lahteet.get("google_yhtiot", True) and nimi != t.split(".")[0]:
-            kieli = "fi" if t.endswith(".HE") else "en"
-            aja("google_yhtiot", google_news, f'"{nimi}"', kieli, 2, tickerit_=[t])
-            time.sleep(0.7)
+            # Englanniksi kaikille (paras ilmainen tulkintamalli FinBERT on englanninkielinen),
+            # Helsingin yhtiöille lisäksi suomeksi (Kauppalehti, Arvopaperi, Inderes...)
+            kielet = ["en", "fi"] if t.endswith(".HE") else ["en"]
+            for kieli in kielet:
+                aja("google_yhtiot", google_news, f'"{nimi}"', kieli, 2, tickerit_=[t])
+                time.sleep(0.7)
         if lahteet.get("yahoo", True):
             aja("yahoo", yahoo_news, t, tickerit_=[t])
             time.sleep(0.3)
@@ -374,6 +377,10 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
         if not r.get("otsikko") or r["aika"] < raja:
             continue
         tyyppi = paattele_tyyppi(r["otsikko"], oletus)
+        if tt and lahde in ("google_yhtiot", "yahoo"):
+            # Yhtiöhaun tulos kelpaa vain, jos yhtiö mainitaan otsikossa (muuten uutinen koskee jotain muuta)
+            if not tunnista_tickerit(r["otsikko"], {t: nimet[t] for t in tt}):
+                continue
         if tt is None:
             tt = tunnista_tickerit(r["otsikko"], nimet)
             if oletus == "foorumi" and not tt:
@@ -390,13 +397,116 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
     malli = ucfg.get("tekoaly_malli", "claude-haiku-5-5")
     tulkittavat = [u for u in uudet if u.tyyppi != "foorumi" or u.tickerit]
     n_ai = tekoalytulkinta(tulkittavat, nimet, malli)
+    n_malli = mallitulkinta([u for u in uudet if u.tulkinta != "tekoaly"])
     for u in uudet:
-        if u.tulkinta != "tekoaly":
+        if u.tulkinta not in ("tekoaly", "malli"):
             u.tunnelma, u.paino = avainsanatulkinta(u.otsikko, u.tyyppi)
             u.tulkinta = "avainsanat"
-    tila["_yhteenveto"] = {"uusia": len(uudet), "tekoaly": n_ai,
-                           "tulkinta": "tekoäly" if n_ai else "avainsanat"}
+        laatupainotus(u)
+    tila["_yhteenveto"] = {"uusia": len(uudet), "tekoaly": n_ai, "malli": n_malli,
+                           "tulkinta": ("tekoäly (Claude)" if n_ai else
+                                        "ilmaiset mallit (FinBERT + monikielinen)" if n_malli else "avainsanat")}
     return uudet, tila
+
+
+# ====================================================================== tulkinta: ilmaiset mallit
+_MALLIT = {}
+
+
+def _kieli(otsikko: str) -> str:
+    o = otsikko.lower()
+    if re.search(r"[äöå]", o) or re.search(r"\b(ja|on|oyj|osake|pörssi|tulos|liikevaihto|yhtiö|suositus|nousi|laski)\b", o):
+        return "fi"
+    return "en"
+
+
+def mallitulkinta(uutiset: list[Uutinen]) -> int:
+    """Ilmaiset avoimet mallit (Hugging Face), jos transformers-kirjasto on asennettu:
+    FinBERT englanninkielisille talousotsikoille, monikielinen malli muille."""
+    if not uutiset:
+        return 0
+    try:
+        from transformers import pipeline
+    except ImportError:
+        return 0
+    try:
+        if not _MALLIT:
+            _MALLIT["en"] = pipeline("text-classification", model="ProsusAI/finbert", top_k=None)
+            _MALLIT["fi"] = pipeline("text-classification",
+                                     model="cardiffnlp/twitter-xlm-roberta-base-sentiment-multilingual", top_k=None)
+    except Exception as e:  # noqa: BLE001
+        print(f"  ! ilmaisten mallien lataus epäonnistui ({e}); käytetään avainsanoja")
+        return 0
+    tehty = 0
+    for kieli in ("en", "fi"):
+        joukko = [u for u in uutiset if _kieli(u.otsikko) == kieli]
+        if not joukko:
+            continue
+        try:
+            tulokset = _MALLIT[kieli]([u.otsikko[:300] for u in joukko], batch_size=32, truncation=True)
+        except Exception as e:  # noqa: BLE001
+            print(f"  ! mallitulkinta ({kieli}) epäonnistui: {e}")
+            continue
+        for u, tulos in zip(joukko, tulokset):
+            p = {d["label"].lower(): d["score"] for d in tulos}
+            tunnelma = p.get("positive", 0) - p.get("negative", 0)
+            # Avainsanat tukena: jos malli on epävarma, mutta otsikossa on selvä signaali
+            a_tun, paino = avainsanatulkinta(u.otsikko, u.tyyppi)
+            if abs(tunnelma) < 0.2 and a_tun:
+                tunnelma = 0.5 * a_tun
+            u.tunnelma, u.paino, u.tulkinta = round(float(tunnelma), 2), paino, "malli"
+            tehty += 1
+    return tehty
+
+
+# ====================================================================== laatu
+LAADUKKAAT = re.compile(r"kauppalehti|arvopaperi|inderes|yle|hs\.fi|helsingin sanomat|talouselämä|reuters|bloomberg|"
+                        r"financial times|wall street journal|dagens industri|e24|børsen|marketscreener|cision|"
+                        r"globenewswire|nasdaq", re.I)
+HEIKOT = re.compile(r"motley fool|simply wall st|invezz|ad-hoc-news|tradingview|benzinga|seeking alpha|"
+                    r"zacks|insidermonkey|marketbeat|bioengineer", re.I)
+KLIKKI = re.compile(r"^\d+ (stocks?|osaketta|dividend|best)|to consider|should you|is it time|worth buying|"
+                    r"top \d+|\?$|what to expect|preview|watchlist|kannattaako", re.I)
+
+
+def laatupainotus(u: Uutinen) -> None:
+    julkaisija = u.lisatieto.get("julkaisija", "")
+    kerroin = 1.0
+    if LAADUKKAAT.search(julkaisija) or u.tyyppi == "tiedote":
+        kerroin *= 1.25
+    if HEIKOT.search(julkaisija):
+        kerroin *= 0.5
+    if KLIKKI.search(u.otsikko):
+        kerroin *= 0.3
+    u.paino = round(min(1.0, u.paino * kerroin), 2)
+
+
+def uudelleentulkitse_arkisto(nimet: dict[str, str], paivia: int = 14) -> int:
+    """Tulkitsee arkiston tuoreet avainsanoilla tulkitut uutiset uudelleen paremmalla
+    menetelmällä (kun ilmaiset mallit tai tekoäly ovat saatavilla) ja poistaa turhat osumat."""
+    raja = (datetime.now(timezone.utc) - timedelta(days=paivia)).isoformat()
+    muutettu = 0
+    for f in sorted(ARKISTO.glob("*.jsonl"))[-2:]:
+        rivit = [Uutinen(**json.loads(r)) for r in f.read_text(encoding="utf-8").splitlines() if r.strip()]
+        tuoreet = [u for u in rivit if u.aika >= raja and u.tulkinta == "avainsanat"]
+        if not tuoreet:
+            continue
+        pidetaan = []
+        for u in rivit:
+            if u in tuoreet and u.tickerit and u.lahde in ("google_yhtiot", "yahoo") and \
+                    not tunnista_tickerit(u.otsikko, {t: nimet.get(t, t) for t in u.tickerit}):
+                muutettu += 1
+                continue
+            pidetaan.append(u)
+        tuoreet = [u for u in tuoreet if u in pidetaan]
+        n = mallitulkinta(tuoreet)
+        if n == 0:
+            continue
+        for u in tuoreet:
+            laatupainotus(u)
+        muutettu += n
+        f.write_text("".join(json.dumps(asdict(u), ensure_ascii=False) + "\n" for u in pidetaan), encoding="utf-8")
+    return muutettu
 
 
 def _nahdyt_tunnisteet(kk=2) -> set[str]:

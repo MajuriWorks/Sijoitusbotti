@@ -28,6 +28,18 @@ jobs:
       - name: Asenna kirjastot
         run: pip install -r requirements.txt
 
+      # Ilmaiset tekoälymallit uutisten tulkintaan (FinBERT + monikielinen).
+      # Jos asennus epäonnistuu, botti käyttää avainsanoja eikä ajo keskeydy.
+      - name: Asenna ilmaiset uutismallit
+        continue-on-error: true
+        run: pip install torch --index-url https://download.pytorch.org/whl/cpu && pip install transformers sentencepiece protobuf
+
+      - name: Mallien välimuisti
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-mallit-v1
+
       - name: Aja botit oikeilla kursseilla ja päivitä raporttisivu
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # valinnainen: tekoälytulkinta uutisille
