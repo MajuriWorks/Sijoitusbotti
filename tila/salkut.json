@@ -5,135 +5,194 @@
  "alkupaaoma": 1000,
  "botit": {
   "lyhyt": {
-   "kateinen": 1000.0,
-   "positiot": {},
-   "odottavat": [
+   "kateinen": 13.073942164333175,
+   "positiot": {
+    "AMBU-B.CO": {
+     "kpl": 39,
+     "hankintahinta": 12.5359505389554,
+     "ostopaiva": "2026-11-16",
+     "huippu": 12.274412077416939
+    },
+    "TELIA1.HE": {
+     "kpl": 108,
+     "hankintahinta": 4.6113332112630205,
+     "ostopaiva": "2026-11-16",
+     "huippu": 4.5279998779296875
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
     {
+     "paiva": "2026-11-16",
      "ticker": "AMBU-B.CO",
      "suunta": "OSTA",
-     "summa": 490.0,
-     "kpl": 0,
+     "kpl": 39,
+     "hinta": 12.274412077416939,
+     "kulu": 10.2,
      "syy": "pisteet +1.04, 20 pv nousu +17.0% | uutinen (+): UBS raises its price target for Ambu to DKK 93 (72), reiterates neutral",
-     "annettu": "2026-11-13",
-     "rajahinta": 12.3839,
-     "voimassa": 3
+     "voitto": null,
+     "pitoaika_pv": null
     },
     {
+     "paiva": "2026-11-16",
      "ticker": "TELIA1.HE",
      "suunta": "OSTA",
-     "summa": 490.0,
-     "kpl": 0,
+     "kpl": 108,
+     "hinta": 4.5279998779296875,
+     "kulu": 9.0,
      "syy": "pisteet +0.77, 20 pv nousu +22.7% | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
-     "annettu": "2026-11-13",
-     "rajahinta": 4.5299,
-     "voimassa": 3
+     "voitto": null,
+     "pitoaika_pv": null
     }
    ],
-   "kaupat": [],
-   "kulut_yht": 0.0,
+   "kulut_yht": 19.2,
    "arvohistoria": {
-    "2026-11-13": 1000.0
+    "2026-11-13": 1000.0,
+    "2026-11-16": 978.02
    },
-   "viimeisin_paatos": "2026-11-13"
+   "viimeisin_paatos": "2026-11-16"
   },
   "pitka": {
-   "kateinen": 1000.0,
-   "positiot": {},
-   "odottavat": [
+   "kateinen": 29.18533490891315,
+   "positiot": {
+    "TELIA1.HE": {
+     "kpl": 108,
+     "hankintahinta": 4.6113332112630205,
+     "ostopaiva": "2026-11-16",
+     "huippu": 4.5279998779296875
+    },
+    "EQNR.OL": {
+     "kpl": 12,
+     "hankintahinta": 39.399223189556714,
+     "ostopaiva": "2026-11-16",
+     "huippu": 38.55255652289005
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
     {
+     "paiva": "2026-11-16",
      "ticker": "TELIA1.HE",
      "suunta": "OSTA",
-     "summa": 490.0,
-     "kpl": 0,
+     "kpl": 108,
+     "hinta": 4.5279998779296875,
+     "kulu": 9.0,
      "syy": "12 kk nousu +78.2%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
-     "annettu": "2026-11-13",
-     "rajahinta": 4.5299,
-     "voimassa": 3
+     "voitto": null,
+     "pitoaika_pv": null
     },
     {
+     "paiva": "2026-11-16",
      "ticker": "EQNR.OL",
      "suunta": "OSTA",
-     "summa": 490.0,
-     "kpl": 0,
+     "kpl": 12,
+     "hinta": 38.55255652289005,
+     "kulu": 10.16,
      "syy": "12 kk nousu +98.1%, heilunta 35%/v | uutinen (+): Equinor Rises as Higher Oil Prices and Ongoing Buybacks Support Shares",
-     "annettu": "2026-11-13",
-     "rajahinta": 38.9551,
-     "voimassa": 3
+     "voitto": null,
+     "pitoaika_pv": null
     }
    ],
-   "kaupat": [],
-   "kulut_yht": 0.0,
+   "kulut_yht": 19.16,
    "arvohistoria": {
-    "2026-11-13": 1000.0
+    "2026-11-13": 1000.0,
+    "2026-11-16": 965.36
    },
    "viimeisin_paatos": "2026-11-13"
   },
   "yhdistelma_pitka": {
-   "kateinen": 600.0,
-   "positiot": {},
-   "odottavat": [
+   "kateinen": 6.8880157470703125,
+   "positiot": {
+    "TELIA1.HE": {
+     "kpl": 129,
+     "hankintahinta": 4.597767319790153,
+     "ostopaiva": "2026-11-16",
+     "huippu": 4.5279998779296875
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
     {
+     "paiva": "2026-11-16",
      "ticker": "TELIA1.HE",
      "suunta": "OSTA",
-     "summa": 588.0,
-     "kpl": 0,
+     "kpl": 129,
+     "hinta": 4.5279998779296875,
+     "kulu": 9.0,
      "syy": "12 kk nousu +78.2%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
-     "annettu": "2026-11-13",
-     "rajahinta": 4.5299,
-     "voimassa": 3
+     "voitto": null,
+     "pitoaika_pv": null
     }
    ],
-   "kaupat": [],
-   "kulut_yht": 0.0,
+   "kulut_yht": 9.0,
    "arvohistoria": {
-    "2026-11-13": 600.0
+    "2026-11-13": 600.0,
+    "2026-11-16": 590.48
    },
    "viimeisin_paatos": "2026-11-13"
   },
   "yhdistelma_lyhyt": {
-   "kateinen": 400.0,
-   "positiot": {},
-   "odottavat": [
+   "kateinen": 9.54322560007489,
+   "positiot": {
+    "AMBU-B.CO": {
+     "kpl": 31,
+     "hankintahinta": 12.595379819352424,
+     "ostopaiva": "2026-11-16",
+     "huippu": 12.274412077416939
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
     {
+     "paiva": "2026-11-16",
      "ticker": "AMBU-B.CO",
      "suunta": "OSTA",
-     "summa": 392.0,
-     "kpl": 0,
+     "kpl": 31,
+     "hinta": 12.274412077416939,
+     "kulu": 9.95,
      "syy": "pisteet +1.04, 20 pv nousu +17.0% | uutinen (+): UBS raises its price target for Ambu to DKK 93 (72), reiterates neutral",
-     "annettu": "2026-11-13",
-     "rajahinta": 12.3839,
-     "voimassa": 3
+     "voitto": null,
+     "pitoaika_pv": null
     }
    ],
-   "kaupat": [],
-   "kulut_yht": 0.0,
+   "kulut_yht": 9.95,
    "arvohistoria": {
-    "2026-11-13": 400.0
+    "2026-11-13": 400.0,
+    "2026-11-16": 388.18
    },
-   "viimeisin_paatos": "2026-11-13"
+   "viimeisin_paatos": "2026-11-16"
   },
   "indeksi": {
-   "kateinen": 1000.0,
-   "positiot": {},
-   "odottavat": [
+   "kateinen": 70.20501708984375,
+   "positiot": {
+    "EUNL.DE": {
+     "kpl": 7,
+     "hankintahinta": 132.8278547014509,
+     "ostopaiva": "2026-11-16",
+     "huippu": 130.68499755859375
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
     {
+     "paiva": "2026-11-16",
      "ticker": "EUNL.DE",
      "suunta": "OSTA",
-     "summa": 980.0,
-     "kpl": 0,
+     "kpl": 7,
+     "hinta": 130.68499755859375,
+     "kulu": 15.0,
      "syy": "Osta ja pidä: koko maailman osakemarkkina",
-     "annettu": "2026-11-13",
-     "rajahinta": 131.7444,
-     "voimassa": 3
+     "voitto": null,
+     "pitoaika_pv": null
     }
    ],
-   "kaupat": [],
-   "kulut_yht": 0.0,
+   "kulut_yht": 15.0,
    "arvohistoria": {
-    "2026-11-13": 1000.0
+    "2026-11-13": 1000.0,
+    "2026-11-16": 980.03
    },
    "viimeisin_paatos": "2026-11-13"
   }
  },
- "viimeisin_kasitelty": "2026-11-13"
+ "viimeisin_kasitelty": "2026-11-16"
 }
