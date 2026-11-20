@@ -186,6 +186,11 @@ def _tietopohjahtml(sig, paiva, paatokset, lahdetila) -> str:
         osat.append("<h3>Painavimmat uutiset (2 pv)</h3>" + _taulukko(
             rivit, ["Kohde", "Tyyppi", "Tunnelma", "Paino", "Otsikko", "Lähde", "Luettu"], "pieni"))
     viimeiset = [p for p in paatokset if p["paiva"] == str(paiva.date())]
+    teemat = next((p["teemat"] for p in viimeiset if p.get("teemat")), None)
+    if teemat:
+        osat.append('<p class="selite">Maailman teemat nyt (v2-botit): ' + ", ".join(
+            f"<b>{html.escape(k)}</b> {v:.1f}" for k, v in sorted(teemat.items(), key=lambda x: -x[1]))
+            + " (0 = tavallinen uutisointi, 2 = erittäin voimakas)</p>")
     if viimeiset:
         rivit = []
         for p in viimeiset:

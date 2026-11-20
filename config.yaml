@@ -155,6 +155,26 @@ botit:
     pohja: yhdistelma
     nimi: Yhdistelmä laaja
     valikoima: laaja
+  # v2: teemat (maailman tapahtumat -> hyötyvät/kärsivät toimialat), perusvalikoima,
+  # ajetaan leikkikaupan alusta tallennetuilla tiedoilla -> suoraan vertailukelpoinen v1:n kanssa
+  lyhyt_v2:
+    kaytossa: true
+    versio: v2
+    pohja: lyhyt
+    nimi: Lyhyt teema
+    aloita: alusta
+  pitka_v2:
+    kaytossa: true
+    versio: v2
+    pohja: pitka
+    nimi: Pitkä teema
+    aloita: alusta
+  yhdistelma_v2:
+    kaytossa: true
+    versio: v2
+    pohja: yhdistelma
+    nimi: Yhdistelmä teema
+    aloita: alusta
   # Uusi versio lisätään RINNALLE näin (vanha jatkaa ennallaan):
   # lyhyt_v2:
   #   kaytossa: true
@@ -168,6 +188,9 @@ versiot:
   v1:
     lukittu: "2026-11-20"
     muutos: "ensimmäinen lukittu versio (uutiset, tekstin luku, kriisit, 4 tarkastajaa, osingot)"
+  v2:
+    lukittu: "2026-11-20"
+    muutos: "v1 + teemat: maailman tapahtumat nostavat hyötyviä ja laskevat kärsiviä toimialoja"
 
 # ---------------- Uutiset, foorumit ja maailma ----------------
 uutiset:
