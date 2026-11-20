@@ -56,6 +56,7 @@ class Positio:
     ostopaiva: str
     huippu: float
     odotettu: float = 0.0
+    viite_kurssi: float = 0.0   # ostopäivän päätöskurssi sellaisena kuin se silloin näkyi (osingot/splitit)
 
 
 @dataclass

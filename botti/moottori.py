@@ -38,6 +38,9 @@ class Moottori:
         paatos = paneeli.paatos.loc[paiva]
         huomiot: list[str] = []
 
+        # 0) Osingot ja osakesplitit omistuksille
+        huomiot += self._yhtiotapahtumat(salkku, paneeli, paiva)
+
         # 1) Eilen annetut toimeksiannot toteutuvat tämän päivän avauksessa
         self.valittaja.toteuta(salkku, paiva, avaus, paneeli.matala.loc[paiva], self._likviditeetti(paneeli, paiva))
         self.valittaja.paivita_huiput(salkku, paatos)
@@ -79,6 +82,45 @@ class Moottori:
 
         salkku.arvohistoria[str(paiva.date())] = round(salkku.arvo(paatos), 2)
         return huomiot
+
+    def _yhtiotapahtumat(self, salkku, paneeli, paiva) -> list[str]:
+        """Yahoo korjaa menneet kurssit taannehtivasti osinkojen ja splittien jälkeen. Verrataan
+        ostopäivän kurssia nyt näkyvään: jos se on muuttunut, välissä on ollut osinko tai splitti.
+          - splitti (kerroin < 0,6 tai > 1,6): osakemäärä ja hinnat muunnetaan, arvo ei muutu
+          - osinko: osinko maksetaan käteisenä (ulkomaisista 15 % lähdevero), hinnat skaalataan,
+            jotta kurssin osingonirtoamispudotus ei laukaise stop-lossia
+        """
+        out = []
+        for t, p in salkku.positiot.items():
+            if t not in paneeli.paatos.columns:
+                continue
+            try:
+                nyt_viite = float(paneeli.paatos.at[pd.Timestamp(p.ostopaiva), t])
+            except (KeyError, ValueError):
+                continue
+            if pd.isna(nyt_viite) or nyt_viite <= 0:
+                continue
+            if not p.viite_kurssi:
+                p.viite_kurssi = nyt_viite
+                continue
+            f = nyt_viite / p.viite_kurssi
+            if abs(f - 1) < 0.002:
+                continue
+            if f < 0.6 or f > 1.6:      # splitti tai käänteinen splitti
+                suhde = 1 / f
+                p.kpl = max(1, int(round(p.kpl * suhde)))
+                out.append(f"{paiva.date()}: {t} osakesplitti {suhde:.2f}:1 – osakemäärä nyt {p.kpl}")
+            elif f < 1:                 # osinko
+                hinta_nyt = float(paneeli.paatos.at[paiva, t])
+                osinko = (1 - f) * hinta_nyt / f * p.kpl
+                vero = 0.0 if t.endswith(".HE") else 0.15
+                salkku.kateinen += osinko * (1 - vero)
+                out.append(f"{paiva.date()}: {t} osinko {osinko * (1 - vero):.2f} € käteiseen"
+                           + (f" (lähdevero 15 %)" if vero else ""))
+            p.hankintahinta *= f
+            p.huippu *= f
+            p.viite_kurssi = nyt_viite
+        return out
 
     @staticmethod
     def myyntiraja(p, sl: float) -> tuple[float, str]:
