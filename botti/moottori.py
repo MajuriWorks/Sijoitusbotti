@@ -9,6 +9,7 @@ import pandas as pd
 
 from .data import Paneeli
 from .strategiat import Strategia
+from . import skeptikko
 from .valittaja import Kulumalli, LeikkiValittaja, Salkku, Toimeksianto
 
 
@@ -26,6 +27,9 @@ class Moottori:
             self._lik = paneeli.vaihto.rolling(20, min_periods=5).median().shift(1)
             self._lik_id = id(paneeli)
         return self._lik.loc[paiva]
+
+    def _likviditeetti_nyt(self, paiva):
+        return self._lik.loc[paiva] if getattr(self, "_lik_id", None) is not None else None
 
     # ------------------------------------------------------------------ päivä
     def askel(self, salkku: Salkku, strategia: Strategia, paneeli: Paneeli, paiva: pd.Timestamp) -> list[str]:
@@ -142,16 +146,46 @@ class Moottori:
         mahtuu = max(1, int(raha // raja1)) if raja1 > 0 else len(uudet)
         uudet = uudet[:mahtuu]
         osuus = raha / len(uudet)
+        lik = self._likviditeetti_nyt(paiva)
+        arviot = {}
         for t in uudet:
+            summa = osuus
+            odotettu = None
+            if hasattr(strategia, "odotettu") and getattr(strategia, "sig", None) is not None:
+                # Skeptikko: viimeinen tarkistus ennen ostoa
+                tuomio, syyt = skeptikko.arvioi(strategia, t, paiva, lik.get(t) if lik is not None else None)
+                arviot[t] = {"tuomio": tuomio, "syyt": syyt}
+                if tuomio == "hylkää":
+                    huomiot.append(f"{pv}: skeptikko hylkäsi {t}: {'; '.join(syyt)}")
+                    continue
+                if tuomio == "puolikas":
+                    summa = osuus / 2
+                # Odotetun hyödyn pitää ylittää kaupan kokonaiskulut (osto + myynti + hintaero) selvästi
+                odotettu = strategia.odotettu(t, paiva)
+                ero = self.valittaja.hintaero(lik.get(t) if lik is not None else None)
+                kulut = 2 * self.kulut.kulu(t, summa) / summa + 2 * ero
+                arviot[t].update({"odotettu": round(odotettu or 0, 4), "kulut": round(kulut, 4)})
+                if odotettu is None or odotettu < kulut + self.riskit.get("vaadittu_marginaali", 0.005):
+                    huomiot.append(f"{pv}: ohitettiin {t} – odotettu tuotto {0 if odotettu is None else odotettu:.1%} "
+                                   f"ei ylitä kuluja {kulut:.1%} + marginaali")
+                    arviot[t]["tuomio"] = "hylkää (kulut)"
+                    continue
             raja = self.kulut.pienin_jarkeva_kauppa(t, max_kulu)
-            if osuus < raja or osuus < float(paatos[t]):
-                huomiot.append(f"{pv}: ohitettiin {t} – {osuus:.0f} € on liian pieni kauppa "
+            if summa < raja or summa < float(paatos[t]):
+                huomiot.append(f"{pv}: ohitettiin {t} – {summa:.0f} € on liian pieni kauppa "
                                f"(kulut > {max_kulu} %, raja {raja:.0f} €)")
                 continue
+            syy = ehd.perustelut.get(t, "")
+            if odotettu is not None:
+                syy += f" | odotettu {odotettu:+.1%} vs. kulut {kulut:.1%}"
+            if arviot.get(t, {}).get("tuomio") == "puolikas":
+                syy += f" | skeptikko: puolikas ({'; '.join(arviot[t]['syyt'])})"
             # Rajahinta: enintään 1 % yli päätöskurssin -> ei jahdata uutisen aiheuttamaa hyppyä
             salkku.odottavat.append(Toimeksianto(
-                t, "OSTA", summa=osuus, annettu=pv, syy=ehd.perustelut.get(t, ""),
-                rajahinta=round(float(paatos[t]) * 1.01, 4)))
+                t, "OSTA", summa=summa, annettu=pv, syy=syy,
+                rajahinta=round(float(paatos[t]) * 1.01, 4), odotettu=round(odotettu or 0, 4)))
+        if self.paatosloki is not None and arviot:
+            self.paatosloki[-1]["skeptikko"] = arviot
         return huomiot
 
     # ------------------------------------------------------------------ jakso

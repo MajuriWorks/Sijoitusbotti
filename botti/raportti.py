@@ -49,6 +49,15 @@ def tunnusluvut(sarja: pd.Series, alkupaaoma: float, salkku: Salkku | None = Non
         d["Keskim. voitto / kauppa"] = f"{np.mean(voitot):+.0f} €" if voitot else "–"
         d["Keskim. tappio / kauppa"] = f"{np.mean(tappiot):+.0f} €" if tappiot else "–"
         d["Suurin tappio"] = f"{min(tappiot):+.0f} €" if tappiot else "–"
+        ennusteet = [k for k in myynnit if k.odotettu is not None and k.toteutunut is not None]
+        if ennusteet:
+            oikein = sum(1 for k in ennusteet if (k.toteutunut > 0) == (k.odotettu > 0))
+            d["Ennuste vs. toteutunut"] = (f"{np.mean([k.odotettu for k in ennusteet]):+.1%} / "
+                                           f"{np.mean([k.toteutunut for k in ennusteet]):+.1%}")
+            d["Ennusteen suunta oikein"] = f"{oikein}/{len(ennusteet)}"
+        else:
+            d["Ennuste vs. toteutunut"] = "–"
+            d["Ennusteen suunta oikein"] = "–"
         d["Keskim. pitoaika"] = (f"{np.mean([k.pitoaika_pv for k in myynnit]):.0f} pv" if myynnit else "–")
     return d
 

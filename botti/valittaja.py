@@ -45,6 +45,7 @@ class Toimeksianto:
     syy: str = ""
     annettu: str = ""      # päivämäärä
     rajahinta: float = 0.0 # ostoille: korkein hyväksytty hinta (0 = markkinahintaan)
+    odotettu: float = 0.0  # ostoille: botin odottama tuotto pitoaikana (ennusteiden tarkistukseen)
     voimassa: int = 3      # ostoille: montako kauppapäivää rajahintatoimeksianto odottaa
 
 
@@ -54,6 +55,7 @@ class Positio:
     hankintahinta: float   # sis. kulut, per osake
     ostopaiva: str
     huippu: float
+    odotettu: float = 0.0
 
 
 @dataclass
@@ -67,6 +69,8 @@ class Kauppa:
     syy: str
     voitto: float | None = None
     pitoaika_pv: int | None = None
+    odotettu: float | None = None      # botin ennuste ostohetkellä
+    toteutunut: float | None = None    # toteutunut tuotto kulujen jälkeen (myynneissä)
 
 
 @dataclass
@@ -167,7 +171,9 @@ class LeikkiValittaja:
                 salkku.kulut_yht += kulu
                 voitto = summa - kulu - kpl * pos.hankintahinta
                 pitoaika = (paiva - pd.Timestamp(pos.ostopaiva)).days
-                k = Kauppa(ps, o.ticker, "MYY", kpl, hinta, kulu, o.syy, round(voitto, 2), pitoaika)
+                k = Kauppa(ps, o.ticker, "MYY", kpl, hinta, kulu, o.syy, round(voitto, 2), pitoaika,
+                           odotettu=pos.odotettu or None,
+                           toteutunut=round(voitto / (kpl * pos.hankintahinta), 4))
                 pos.kpl -= kpl
                 if pos.kpl <= 0:
                     del salkku.positiot[o.ticker]
@@ -188,8 +194,8 @@ class LeikkiValittaja:
                     vanha.hankintahinta = (vanha.kpl * vanha.hankintahinta + summa + kulu) / yht
                     vanha.kpl = yht
                 else:
-                    salkku.positiot[o.ticker] = Positio(kpl, (summa + kulu) / kpl, ps, hinta)
-                k = Kauppa(ps, o.ticker, "OSTA", kpl, hinta, kulu, o.syy)
+                    salkku.positiot[o.ticker] = Positio(kpl, (summa + kulu) / kpl, ps, hinta, o.odotettu)
+                k = Kauppa(ps, o.ticker, "OSTA", kpl, hinta, kulu, o.syy, odotettu=o.odotettu or None)
             salkku.kaupat.append(k)
             tehdyt.append(k)
         salkku.odottavat = jaljelle

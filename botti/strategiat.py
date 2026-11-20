@@ -115,6 +115,18 @@ class Lyhyt(Strategia):
     def onko_paatospaiva(self, paiva, edellinen):
         return True
 
+    horisontti_pv = 10
+
+    def odotettu(self, t, paiva) -> float | None:
+        """Arvio odotetusta tuotosta pitoaikana (osuus): markkinan normaali nousu (~0,3 % / 2 vk)
+        + signaalin tuoma etu, joka on suurempi voimakkaasti heiluvissa osakkeissa. Lähtöarvot
+        perustuvat tutkimuksiin uutis- ja momentumilmiöistä; ne tarkentuvat, kun ennusteita
+        verrataan toteutuneeseen (raportti: Ennuste vs. toteutunut)."""
+        p, vol = self.pisteet.at[paiva, t], self.vol.at[paiva, t]
+        if pd.isna(p) or pd.isna(vol):
+            return None
+        return float(0.003 + 0.04 * np.clip(p, 0, 1.5) / 1.5 * np.clip(vol / 0.30, 0.5, 2.0))
+
     def ehdota(self, paiva, omistukset, n):
         c, s20, s50 = self.c.loc[paiva], self.sma20.loc[paiva], self.sma50.loc[paiva]
         p = self.pisteet.loc[paiva].where(self.ok.loc[paiva])
@@ -189,6 +201,15 @@ class Pitka(Strategia):
             return True
         e = pd.Timestamp(edellinen)
         return (paiva.year, paiva.month) != (e.year, e.month)
+
+    horisontti_pv = 63
+
+    def odotettu(self, t, paiva) -> float | None:
+        p, vol = self.pisteet.at[paiva, t], self.vol.at[paiva, t]
+        if pd.isna(p) or pd.isna(vol):
+            return None
+        # Markkinan normaali nousu (~2 % / 3 kk) + kärkiosakkeiden momentum- ja uutisetu
+        return float(0.02 + 0.06 * np.clip(p, 0, 1.0))
 
     def ehdota(self, paiva, omistukset, n):
         c, s200 = self.c.loc[paiva], self.sma200.loc[paiva]

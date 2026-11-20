@@ -40,7 +40,8 @@ riskit:
   max_kulu_prosentti: 2.5      # kauppaa ei tehdä, jos kulu ylittää tämän % kauppasummasta
   kateisvara_prosentti: 2      # pidetään käteisenä kulujen varalle
   stop_loss_prosentti: 15      # myy, jos kurssi laskee näin paljon huipustaan omistusaikana
-  min_paivavaihto_eur: 200000  # vähemmän vaihdetut osakkeet jätetään pois (osto- ja myyntihinnan ero)
+  min_paivavaihto_eur: 200000
+  vaadittu_marginaali: 0.005   # odotetun tuoton pitää ylittää kaupan kokonaiskulut vähintään tällä (0,5 %)  # vähemmän vaihdetut osakkeet jätetään pois (osto- ja myyntihinnan ero)
 
 # ---------------- Seurattavat kohteet ----------------
 # Yahoo Finance -tunnukset. Pääte kertoo pörssin: .HE Helsinki, .ST Tukholma,
