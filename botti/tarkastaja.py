@@ -7,7 +7,10 @@ Neljä tarkastajaa katsoo ostoa eri kulmista ja eri tiedoista:
   Ajoitustarkastaja  – tuleva tulosjulkistus ja maailman kriisitila
 
 Kukin antaa tuloksen "osta", "pienennä" tai "ohita".
-Yhteispäätös:
+Kaksi kierrosta: ehdottomat estot (vakava uutinen, puuttuva data, tarkastusvirhe) pysäyttävät
+oston heti. Muut ohitukset tarkastetaan toisella kierroksella tarkemmin (onko kurssinousulle
+painava uutisperuste, onko kielteinen uutinen oikeasti merkittävä) ja voivat lieventyä.
+Yhteispäätös toisen kierroksen jälkeen:
   yksikin "ohita"            -> ohita
   vähintään 3 "pienennä"     -> ohita (liian monta varoitusmerkkiä yhtä aikaa)
   1–2 "pienennä"             -> pienennä (osto puolet pienempänä)
@@ -50,8 +53,10 @@ def _tulos(ohita: list[str], pienenna: list[str]) -> tuple[str, list[str]]:
 def uutistarkastaja(strategia, t, paiva, **_):
     sig = strategia.sig
     ohita, pienenna = [], []
-    if sig.kielteinen_uutinen(t, paiva):
-        ohita.append("kielteinen uutinen viime päiviltä")
+    if sig.hatauutinen(t, paiva) is not None:
+        ohita.append("[veto] vakava kielteinen uutinen: " + sig.hatauutinen(t, paiva).otsikko[:80])
+    elif sig.kielteinen_uutinen(t, paiva):
+        ohita.append("[kielteinen] kielteinen uutinen viime päiviltä")
     i = int(sig.paivat.searchsorted(paiva))
     tuoreet = [u for j in range(max(0, i - 3), i + 1) for u in sig._otsikot.get((t, j), [])]
     if any(u.tunnelma > 0.5 for u in tuoreet) and any(u.tunnelma < -0.5 for u in tuoreet):
@@ -66,7 +71,7 @@ def uutistarkastaja(strategia, t, paiva, **_):
 def kurssitarkastaja(strategia, t, paiva, **_):
     c = strategia.c[t].loc[:paiva].dropna()
     if len(c) < 25:
-        return "ohita", ["liian lyhyt kurssihistoria"]
+        return "ohita", ["[veto] liian lyhyt kurssihistoria"]
     ohita, pienenna = [], []
     nyt = float(c.iloc[-1])
     yli20 = nyt / float(c.iloc[-20:].mean()) - 1
@@ -74,7 +79,7 @@ def kurssitarkastaja(strategia, t, paiva, **_):
     r1 = nyt / float(c.iloc[-2]) - 1
     if strategia.nimi.endswith("lyhyt"):
         if r5 > 0.12 or yli20 > 0.15:
-            ohita.append(f"ylikuumentunut (5 pv {r5:+.0%}, {yli20:+.0%} yli 20 pv keskiarvon)")
+            ohita.append(f"[ylikuumentunut] ylikuumentunut (5 pv {r5:+.0%}, {yli20:+.0%} yli 20 pv keskiarvon)")
     elif yli20 > 0.20:
         pienenna.append(f"kurssi {yli20:+.0%} yli 20 pv keskiarvon")
     if r1 > 0.08:
@@ -107,7 +112,7 @@ def ajoitustarkastaja(strategia, t, paiva, **_):
     if sig.onko_dataa:
         tp = _seuraava_tulosjulkistus(t)
         if tp is not None and pd.Timestamp(paiva) <= tp <= pd.Timestamp(paiva) + pd.Timedelta(days=7):
-            (ohita if strategia.nimi.endswith("lyhyt") else pienenna).append(f"tulosjulkistus tulossa {tp.date()}")
+            (ohita if strategia.nimi.endswith("lyhyt") else pienenna).append(f"[tulos] tulosjulkistus tulossa {tp.date()}")
     return _tulos(ohita, pienenna)
 
 
@@ -119,21 +124,69 @@ TARKASTAJAT = {
 }
 
 
+def _toinen_kierros(strategia, t, paiva, syy: str) -> tuple[str, str]:
+    """Tarkempi tarkastelu ohitukselle, joka ei ole ehdoton esto.
+    Palauttaa (uusi tulos, perustelu)."""
+    sig = strategia.sig
+    i = int(sig.paivat.searchsorted(paiva))
+    tuoreet = [u for j in range(max(0, i - 3), i + 1) for u in sig._otsikot.get((t, j), [])]
+    if syy.startswith("[ylikuumentunut]"):
+        # Onko nousulle painava syy? Merkittävä myönteinen tiedote tai analyytikon nosto luotettavasta lähteestä
+        perusteet = [u for u in tuoreet if u.tunnelma >= 0.5 and u.paino >= 0.7
+                     and u.tyyppi in ("tiedote", "analyytikko", "uutinen")]
+        if perusteet:
+            return "pienennä", f"nousu perustuu merkittävään uutiseen: {perusteet[0].otsikko[:70]}"
+        return "ohita", "nousulle ei löydy uutisperustetta – todennäköisesti ylikuumentunut"
+    if syy.startswith("[kielteinen]"):
+        # Kuinka painava kielteinen uutinen on, ja onko kokonaiskuva silti myönteinen?
+        kielteiset = [u for u in tuoreet if u.tunnelma < -0.2]
+        painavin = min((u.tunnelma * u.paino for u in kielteiset), default=0)
+        kokonaisuus = float(sig.uutis_lyhyt.at[paiva, t]) if t in sig.uutis_lyhyt.columns else 0
+        if painavin > -0.3 and kokonaisuus > 0.2:
+            return "pienennä", "kielteinen uutinen on vähäpätöinen ja kokonaiskuva myönteinen"
+        return "ohita", "kielteinen uutinen on merkittävä"
+    if syy.startswith("[tulos]"):
+        return "ohita", "lyhyessä kaupassa tulosjulkistus on liian suuri arpapeli"
+    return "ohita", ""
+
+
 def arvioi(strategia, ticker: str, paiva: pd.Timestamp, likviditeetti: float | None):
-    """Palauttaa (yhteispäätös, syyt, tarkastajakohtaiset tulokset)."""
+    """Kaksi kierrosta:
+      1. Neljä tarkastajaa antavat tuloksensa.
+      2. Ohitukset, jotka eivät ole ehdottomia estoja, tarkastetaan tarkemmin: onko syy todellinen?
+    Palauttaa (yhteispäätös, syyt, tarkastajakohtaiset tulokset)."""
     tulokset = {}
     for nimi, fn in TARKASTAJAT.items():
         try:
             tulokset[nimi] = fn(strategia, ticker, paiva, likviditeetti=likviditeetti)
         except Exception as e:  # noqa: BLE001  – virhe ei saa päästää ostoa läpi
-            tulokset[nimi] = ("ohita", [f"tarkastus epäonnistui ({type(e).__name__})"])
-    syyt = [f"{n}: {s}" for n, (_, ss) in tulokset.items() for s in ss]
-    ohitukset = sum(1 for v, _ in tulokset.values() if v == "ohita")
-    pienennykset = sum(1 for v, _ in tulokset.values() if v == "pienennä")
+            tulokset[nimi] = ("ohita", [f"[veto] tarkastus epäonnistui ({type(e).__name__})"])
+
+    lopulliset, syyt = {}, []
+    for nimi, (tulos, ss) in tulokset.items():
+        toiset = []
+        for s in ss:
+            koodi = s.split("]")[0] + "]" if s.startswith("[") else ""
+            teksti = s.split("] ", 1)[-1]
+            if tulos == "ohita" and koodi in ("[ylikuumentunut]", "[kielteinen]", "[tulos]"):
+                uusi, perustelu = _toinen_kierros(strategia, ticker, paiva, s)
+                toiset.append(uusi)
+                syyt.append(f"{nimi}: {teksti} → 2. kierros: {uusi} ({perustelu})")
+            else:
+                syyt.append(f"{nimi}: {teksti}")
+        if tulos != "ohita":
+            lopulliset[nimi] = tulos
+        elif any(s.startswith("[veto]") for s in ss) or "ohita" in toiset or not toiset:
+            lopulliset[nimi] = "ohita"
+        else:
+            lopulliset[nimi] = "pienennä"
+
+    ohitukset = sum(1 for v in lopulliset.values() if v == "ohita")
+    pienennykset = sum(1 for v in lopulliset.values() if v == "pienennä")
     if ohitukset or pienennykset >= 3:
         paatos = "ohita"
     elif pienennykset:
         paatos = "pienennä"
     else:
         paatos = "osta"
-    return paatos, syyt, {n: v for n, (v, _) in tulokset.items()}
+    return paatos, syyt, lopulliset
