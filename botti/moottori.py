@@ -20,6 +20,13 @@ class Moottori:
         self.valittaja = LeikkiValittaja(self.kulut)
         self.paatosloki: list[dict] | None = None   # leikkikaupassa lista, historiatestissä None
 
+    def _likviditeetti(self, paneeli, paiva) -> pd.Series:
+        """Päivävaihdon mediaani 20 pv ajalta (hintaeron arviointiin)."""
+        if getattr(self, "_lik_id", None) != id(paneeli):
+            self._lik = paneeli.vaihto.rolling(20, min_periods=5).median().shift(1)
+            self._lik_id = id(paneeli)
+        return self._lik.loc[paiva]
+
     # ------------------------------------------------------------------ päivä
     def askel(self, salkku: Salkku, strategia: Strategia, paneeli: Paneeli, paiva: pd.Timestamp) -> list[str]:
         """Palauttaa listan huomioita (esim. ohitetut kaupat)."""
@@ -28,7 +35,7 @@ class Moottori:
         huomiot: list[str] = []
 
         # 1) Eilen annetut toimeksiannot toteutuvat tämän päivän avauksessa
-        self.valittaja.toteuta(salkku, paiva, avaus, paneeli.matala.loc[paiva])
+        self.valittaja.toteuta(salkku, paiva, avaus, paneeli.matala.loc[paiva], self._likviditeetti(paneeli, paiva))
         self.valittaja.paivita_huiput(salkku, paatos)
 
         # 2) Stop-loss tarkistetaan joka päivä

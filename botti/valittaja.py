@@ -113,8 +113,25 @@ class LeikkiValittaja:
     def __init__(self, kulut: Kulumalli):
         self.kulut = kulut
 
+    @staticmethod
+    def hintaero(vaihto_eur: float | None) -> float:
+        """Arvio osto- ja myyntihinnan erotuksen puolikkaasta (osuutena hinnasta).
+        Vähän vaihdetuissa osakkeissa ero on suuri: ostaja maksaa enemmän ja myyjä saa vähemmän
+        kuin "kurssi" näyttää."""
+        if vaihto_eur is None or pd.isna(vaihto_eur):
+            return 0.004
+        if vaihto_eur >= 20e6:
+            return 0.0005
+        if vaihto_eur >= 5e6:
+            return 0.001
+        if vaihto_eur >= 1e6:
+            return 0.002
+        if vaihto_eur >= 300e3:
+            return 0.004
+        return 0.007
+
     def toteuta(self, salkku: Salkku, paiva: pd.Timestamp, avaus: pd.Series,
-                matala: pd.Series | None = None) -> list[Kauppa]:
+                matala: pd.Series | None = None, vaihto: pd.Series | None = None) -> list[Kauppa]:
         """Toteuttaa odottavat toimeksiannot päivän avauskurssiin. Myynnit ensin.
         Ostot ovat rajahintatoimeksiantoja: jos kurssi avaa rajan yläpuolella, osto toteutuu
         rajahintaan vain, jos päivän alin kurssi käy rajassa. Muuten toimeksianto odottaa."""
@@ -125,12 +142,14 @@ class LeikkiValittaja:
             if hinta is None or pd.isna(hinta) or hinta <= 0:
                 jaljelle.append(o)          # ei kauppaa tänään -> odottaa
                 continue
-            hinta = float(hinta)
+            ero = self.hintaero(vaihto.get(o.ticker) if vaihto is not None else None)
+            # Ostaja maksaa myyntitarjouksen hinnan, myyjä saa ostotarjouksen hinnan
+            hinta = float(hinta) * (1 + ero if o.suunta == "OSTA" else 1 - ero)
             ps = paiva.strftime("%Y-%m-%d")
             if o.suunta == "OSTA" and o.rajahinta > 0 and hinta > o.rajahinta:
                 # Avaus rajahinnan yläpuolella: toteutuu vain, jos kurssi käy päivän aikana rajassa
                 alin = matala.get(o.ticker) if matala is not None else None
-                if alin is not None and not pd.isna(alin) and float(alin) <= o.rajahinta:
+                if alin is not None and not pd.isna(alin) and float(alin) * (1 + ero) <= o.rajahinta:
                     hinta = o.rajahinta
                 else:
                     o.voimassa -= 1

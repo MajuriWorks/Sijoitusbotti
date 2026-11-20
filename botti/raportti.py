@@ -217,7 +217,8 @@ def html_raportti(otsikko: str, tila: str, botit: list[dict], vertailu: pd.Serie
         if rivit:
             osat.append('<p class="selite">Leikkikaupassa botti toteuttaa nämä itse huomisen avauskurssiin. '
                         'Ostot ovat rajahintatoimeksiantoja (enintään 1 % yli päätöskurssin, voimassa 3 päivää), '
-                        'myynnit tehdään markkinahintaan. Oikealla rahalla tee samat toimeksiannot Nordnetissa.</p>')
+                        'myynnit tehdään markkinahintaan. Simulaatio huomioi välityspalkkion, valuutanvaihdon ja '
+                        'osto- ja myyntihinnan eron. Oikealla rahalla tee samat toimeksiannot Nordnetissa.</p>')
             osat.append(_taulukko(rivit, ["Botti", "Suunta", "Osake", "Määrä", "Rajahinta n.", "Summa n.",
                                           "Kulu n.", "Perustelu"], "toimeksiannot"))
         else:
