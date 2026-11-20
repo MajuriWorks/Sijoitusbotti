@@ -402,6 +402,16 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
         if u.tulkinta not in ("tekoaly", "malli"):
             u.tunnelma, u.paino = avainsanatulkinta(u.otsikko, u.tyyppi)
             u.tulkinta = "avainsanat"
+    # Tärkeimpien uutisten leipäteksti (otsikko voi olla klikkiotsikko)
+    if ucfg.get("lue_artikkelit", True):
+        from .artikkelit import lue_ja_tulkitse
+        try:
+            tila["artikkelit"] = {"ok": 0, "virheet": 0, "viimeisin_virhe": "", **lue_ja_tulkitse(
+                uudet, nimet, ucfg.get("max_luettavia_artikkeleita", 150))}
+            tila["artikkelit"]["ok"] = tila["artikkelit"]["luettu"]
+        except Exception as e:  # noqa: BLE001
+            tila["artikkelit"] = {"ok": 0, "virheet": 1, "viimeisin_virhe": f"{type(e).__name__}: {e}"[:150]}
+    for u in uudet:
         laatupainotus(u)
     tila["_yhteenveto"] = {"uusia": len(uudet), "tekoaly": n_ai, "malli": n_malli,
                            "tulkinta": ("tekoäly (Claude)" if n_ai else

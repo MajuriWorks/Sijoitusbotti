@@ -161,10 +161,14 @@ def _tietopohjahtml(sig, paiva, paatokset, lahdetila) -> str:
         otsikko = html.escape(u.otsikko[:140])
         if u.linkki:
             otsikko = f'<a href="{html.escape(u.linkki)}" target="_blank" rel="noopener">{otsikko}</a>'
-        rivit.append([html.escape(tt), u.tyyppi, f"{u.tunnelma:+.2f}", f"{u.paino:.1f}", otsikko, html.escape(u.lahde)])
+        luettu = "teksti" if str(u.lisatieto.get("teksti", "")).startswith("luettu") else "otsikko"
+        if u.lisatieto.get("suunta"):
+            luettu = f"teksti: {u.lisatieto['suunta']}"
+        rivit.append([html.escape(tt), u.tyyppi, f"{u.tunnelma:+.2f}", f"{u.paino:.1f}", otsikko,
+                      html.escape(u.lisatieto.get("julkaisija") or u.lahde), luettu])
     if rivit:
         osat.append("<h3>Painavimmat uutiset (2 pv)</h3>" + _taulukko(
-            rivit, ["Kohde", "Tyyppi", "Tunnelma", "Paino", "Otsikko", "Lähde"], "pieni"))
+            rivit, ["Kohde", "Tyyppi", "Tunnelma", "Paino", "Otsikko", "Lähde", "Luettu"], "pieni"))
     viimeiset = [p for p in paatokset if p["paiva"] == str(paiva.date())]
     if viimeiset:
         rivit = []

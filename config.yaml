@@ -113,6 +113,8 @@ uutiset:
   # Ilman sitä uutiset tulkitaan avainsanoilla.
   tekoaly_malli: claude-haiku-5-5
   max_yhtiohakuja: 200
+  lue_artikkelit: true             # luetaan tärkeimpien uutisten teksti, ei vain otsikkoa
+  max_luettavia_artikkeleita: 150  # per ajo
   lahteet:
     google_yhtiot: true      # yhtiökohtaiset uutiset ja pörssitiedotteet
     yahoo: true              # Yahoo Financen yhtiöuutiset
