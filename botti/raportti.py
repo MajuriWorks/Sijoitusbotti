@@ -184,6 +184,14 @@ def _tietopohjahtml(sig, paiva, paatokset, lahdetila) -> str:
         for p in viimeiset:
             ehd = "<br>".join(f"<b>{html.escape(e['osake'])}</b> {html.escape(e['perustelu'])}" for e in p["ehdokkaat"][:3])
             myy = "<br>".join(f"<b>{html.escape(t)}</b> {html.escape(s)}" for t, s in p.get("myydaan", {}).items())
+            tark = p.get("tarkastus") or {}
+            if tark:
+                lyh = {"Uutistarkastaja": "uutiset", "Kurssitarkastaja": "kurssi",
+                       "Riskitarkastaja": "riski", "Ajoitustarkastaja": "ajoitus"}
+                ehd += "<br><span style='color:var(--teksti2)'>Tarkastajat: " + "; ".join(
+                    f"<b>{html.escape(t)}</b> → {html.escape(a['tuomio'])} ("
+                    + ", ".join(f"{lyh.get(n, n)}: {v}" for n, v in a.get("tarkastajat", {}).items()) + ")"
+                    for t, a in tark.items()) + "</span>"
             rivit.append([html.escape(p["botti"]), html.escape(", ".join(p["pidetaan"]) or "–"),
                           myy or "–", ((f"<i>{html.escape(p['estetty'])}</i><br>" if p.get("estetty") else "")
                                        + (ehd or "–"))])

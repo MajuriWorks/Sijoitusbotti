@@ -153,10 +153,10 @@ class Moottori:
             odotettu = None
             if hasattr(strategia, "odotettu") and getattr(strategia, "sig", None) is not None:
                 # Tarkastaja: viimeinen tarkistus ennen ostoa
-                tuomio, syyt = tarkastaja.arvioi(strategia, t, paiva, lik.get(t) if lik is not None else None)
-                arviot[t] = {"tuomio": tuomio, "syyt": syyt}
+                tuomio, syyt, kukin = tarkastaja.arvioi(strategia, t, paiva, lik.get(t) if lik is not None else None)
+                arviot[t] = {"tuomio": tuomio, "syyt": syyt, "tarkastajat": kukin}
                 if tuomio == "ohita":
-                    huomiot.append(f"{pv}: tarkastaja ohitti {t}: {'; '.join(syyt)}")
+                    huomiot.append(f"{pv}: tarkastajat ohittivat {t}: {'; '.join(syyt)}")
                     continue
                 if tuomio == "pienennä":
                     summa = osuus / 2
@@ -179,7 +179,7 @@ class Moottori:
             if odotettu is not None:
                 syy += f" | odotettu {odotettu:+.1%} vs. kulut {kulut:.1%}"
             if arviot.get(t, {}).get("tuomio") == "pienennä":
-                syy += f" | tarkastaja: pienennetty osto ({'; '.join(arviot[t]['syyt'])})"
+                syy += f" | tarkastajat: pienennetty osto ({'; '.join(arviot[t]['syyt'])})"
             # Rajahinta: enintään 1 % yli päätöskurssin -> ei jahdata uutisen aiheuttamaa hyppyä
             salkku.odottavat.append(Toimeksianto(
                 t, "OSTA", summa=summa, annettu=pv, syy=syy,
