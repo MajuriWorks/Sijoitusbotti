@@ -26,7 +26,8 @@ class Ehdotus:
     ostettavat: list[str]          # parhaasta huonoimpaan
     pidettavat: set[str]           # nykyiset omistukset, jotka saa pitää
     perustelut: dict[str, str]     # ticker -> selitys
-    estetty: str = ""              # syy, miksi uusia ostoja ei tehdä (esim. maailman tilanne)
+    estetty: str = ""              # syy, miksi uusia ostoja ei tehdä
+    varovaisuus: str = ""          # kriisi tai synkkä tunnelma: ostetaan vain kestävimpiä
 
 
 def _sija(df: pd.DataFrame) -> pd.DataFrame:
@@ -97,6 +98,7 @@ class Lyhyt(Strategia):
         c = paneeli.paatos
         self.c, self.sma20, self.sma50 = c, c.rolling(20).mean(), c.rolling(50).mean()
         r5, r20 = c / c.shift(5) - 1, c / c.shift(20) - 1
+        self.r5 = r5
         vaihto_piikki = np.log((paneeli.vaihto / paneeli.vaihto.rolling(20, min_periods=10).median()).clip(0.2, 5))
         self.vol = np.log(c).diff().rolling(60).std() * np.sqrt(252)
         u = sig.uutis_lyhyt.reindex_like(c).fillna(0)
@@ -123,10 +125,17 @@ class Lyhyt(Strategia):
             kelpaa &= u > 0.15
         jarjestys = p.dropna().sort_values(ascending=False)
         sijat = {t: i for i, t in enumerate(jarjestys.index)}
-        estetty = ""
-        if self.maailma.loc[paiva] < -0.3:
-            estetty = f"Maailman uutistunnelma negatiivinen ({self.maailma.loc[paiva]:+.2f}) – ei uusia ostoja"
-        ostettavat = [] if estetty else [t for t in jarjestys.index if kelpaa.get(t, False)]
+        varovaisuus = ""
+        if self.sig.kriisissa(paiva):
+            varovaisuus = f"Kriisitila: vakavia maailmanuutisia {self.sig.kriisitaso.loc[paiva]:.1f}x tavallista"
+        elif self.maailma.loc[paiva] < -0.3:
+            varovaisuus = f"Maailman uutistunnelma synkkä ({self.maailma.loc[paiva]:+.2f})"
+        if varovaisuus:
+            # Ostetaan vain selvästi myönteisten uutisten osakkeita, jotka ovat pitäneet pintansa markkinaa paremmin
+            r5 = self.r5.loc[paiva]
+            kelpaa &= (u > 0.4) & (r5 > r5.median())
+            varovaisuus += " – ostetaan vain vahvan uutisen ja markkinaa paremmin pärjänneitä osakkeita"
+        ostettavat = [t for t in jarjestys.index if kelpaa.get(t, False)]
 
         pidettavat, perustelut = set(), {}
         ind = self.c.index
@@ -148,7 +157,7 @@ class Lyhyt(Strategia):
         for t in ostettavat[:10]:
             perustelut[t] = (f"pisteet {p[t]:+.2f}, 20 pv nousu {self.r20.loc[paiva, t]:+.1%}"
                              + self._uutisteksti(t, paiva))
-        return Ehdotus(ostettavat, pidettavat, perustelut, estetty)
+        return Ehdotus(ostettavat, pidettavat, perustelut, varovaisuus=varovaisuus)
 
 
 # ======================================================================= Pitkä
@@ -188,10 +197,16 @@ class Pitka(Strategia):
         kelpaa = (m > 0) & (c > s200) & (~self.kuuma.loc[paiva]) & (u > -0.5)
         jarjestys = p.dropna().sort_values(ascending=False)
         sijat = {t: i for i, t in enumerate(jarjestys.index)}
-        estetty = ""
-        if not bool(self.nousu.loc[paiva]) and self.maailma.loc[paiva] < -0.15:
-            estetty = "Markkina laskutrendissä ja maailman uutistunnelma negatiivinen – ei uusia ostoja"
-        ostettavat = [] if estetty else [t for t in jarjestys.index if kelpaa.get(t, False)]
+        varovaisuus = ""
+        if self.sig.kriisissa(paiva):
+            varovaisuus = f"Kriisitila: vakavia maailmanuutisia {self.sig.kriisitaso.loc[paiva]:.1f}x tavallista"
+        elif not bool(self.nousu.loc[paiva]) and self.maailma.loc[paiva] < -0.15:
+            varovaisuus = "Markkina laskutrendissä ja maailman uutistunnelma synkkä"
+        if varovaisuus:
+            # Puolustava valinta: vähän heiluvat osakkeet, joista ei ole kielteisiä uutisia
+            kelpaa &= (self.vol.loc[paiva] < 0.35) & (u >= 0)
+            varovaisuus += " – ostetaan vain vakaita osakkeita, joista ei ole kielteisiä uutisia"
+        ostettavat = [t for t in jarjestys.index if kelpaa.get(t, False)]
         pidettavat, perustelut = set(), {}
         for t in omistukset:
             if c.get(t, 0) <= s200.get(t, np.inf):
@@ -205,7 +220,7 @@ class Pitka(Strategia):
         for t in ostettavat[:10]:
             perustelut[t] = (f"12 kk nousu {m[t]:+.1%}, heilunta {self.vol.loc[paiva, t]:.0%}/v"
                              + self._uutisteksti(t, paiva))
-        return Ehdotus(ostettavat, pidettavat, perustelut, estetty)
+        return Ehdotus(ostettavat, pidettavat, perustelut, varovaisuus=varovaisuus)
 
 
 # ===================================================================== Indeksi

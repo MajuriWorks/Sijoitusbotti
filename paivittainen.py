@@ -24,6 +24,7 @@ from botti.botit import aja_botit
 from botti.moottori import Moottori
 from botti.raportti import html_raportti, markkinasarja
 from botti.signaalit import Signaalit
+from botti.valittaja import Salkku, Toimeksianto
 
 TILA = Path("tila/salkut.json")
 TILAVERSIO = 3   # kasvatetaan, kun bottien kokoonpano muuttuu -> vanha tila talletetaan ja aloitetaan alusta
@@ -62,12 +63,48 @@ def julkaise(sivu: str, paiva: pd.Timestamp) -> None:
         encoding="utf-8")
 
 
+def aamutarkistus(tila: dict, sig: Signaalit, paiva) -> list[str]:
+    """Yön aikana (USA, Aasia) tulleet vakavat uutiset ennen pörssin avautumista:
+    - omistetusta yhtiöstä vakava kielteinen uutinen -> myydään avauksessa
+    - kriisihälytys (paljon vakavia maailmanuutisia) -> perutaan odottavat ostot"""
+    from datetime import datetime as _dt
+    klo = _dt.now(ZoneInfo("Europe/Helsinki")).strftime("%H:%M")
+    huomiot = []
+    kriisi = sig.kriisissa(paiva)
+    for osa, d in tila.get("botit", {}).items():
+        if osa == "indeksi":
+            continue
+        s = Salkku.from_dict(d)
+        myytavana = {o.ticker for o in s.odottavat if o.suunta == "MYY"}
+        for t, p in s.positiot.items():
+            u = sig.hatauutinen(t, paiva)
+            if u is not None and t not in myytavana:
+                s.odottavat.append(Toimeksianto(t, "MYY", kpl=p.kpl, annettu=str(paiva.date()),
+                                                syy=f"AAMUTARKISTUS: vakava uutinen yöllä: {u.otsikko[:100]}"))
+                huomiot.append(f"Aamutarkistus {klo} [{osa}]: myydään {t} – {u.otsikko[:80]}")
+        perutut = [o.ticker for o in s.odottavat if o.suunta == "OSTA" and sig.kielteinen_uutinen(o.ticker, paiva)]
+        if perutut:
+            s.odottavat = [o for o in s.odottavat if not (o.suunta == "OSTA" and o.ticker in perutut)]
+            huomiot.append(f"Aamutarkistus {klo} [{osa}]: perutaan osto {', '.join(perutut)} – kielteinen uutinen yöllä")
+        tila["botit"][osa] = s.to_dict()
+    if kriisi:
+        huomiot.append(f"Aamutarkistus {klo}: KRIISITILA – vakavia maailmanuutisia {sig.kriisitaso.loc[paiva]:.1f}x "
+                       "tavallista. Suoraan osuvat myydään, uudet ostot vain kestävimpiin osakkeisiin.")
+    if not huomiot:
+        huomiot.append(f"Aamutarkistus {klo}: yön uutisissa ei vakavia muutoksia – toimeksiannot ennallaan")
+    for h in huomiot:
+        print(" ", h)
+    return huomiot
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--nollaa", action="store_true", help="poista vanha leikkisalkku ja aloita alusta")
     ap.add_argument("--config", default="config.yaml")
     ap.add_argument("--testidata", action="store_true", help="keksitty data (koodin testaus)")
     ap.add_argument("--julkaise", action="store_true", help="kirjoita raportti myös docs/-kansioon (pilviajo)")
+    ap.add_argument("--aamu", action="store_true",
+                    help="aamutarkistus ennen pörssin avautumista: yön uutiset, hätämyynnit ja kriisihälytys")
     ap.add_argument("--testi-asti", help="testidatalla: käsittele vain tähän päivään asti (YYYY-MM-DD)")
     a = ap.parse_args()
 
@@ -130,11 +167,16 @@ def main():
         print(f"  {len(uudet)} uutta uutista/viestiä")
     sig = Signaalit(uutismoduuli.lataa_arkisto(), paneeli.paatos.index, paneeli.tickerit)
 
+    aamuhuomiot = aamutarkistus(tila, sig, viimeisin) if a.aamu else []
+
     moottori = Moottori(cfg)
     moottori.paatosloki = []
+    if a.aamu:   # aamulla ei käsitellä uusia kauppapäiviä, vain muutetaan odottavia toimeksiantoja
+        tila["viimeisin_kasitelty"] = tila.get("viimeisin_kasitelty") or str(viimeisin.date())
     tulokset, huomiot, tila["botit"] = aja_botit(cfg, paneeli, sig, moottori, tila["botit"],
                                                  alku=max(aloitus, viimeisin))
 
+    huomiot = aamuhuomiot + huomiot
     tila["viimeisin_kasitelty"] = str(viimeisin.date())
     TILA.parent.mkdir(exist_ok=True)
     TILA.write_text(json.dumps(tila, ensure_ascii=False, indent=1), encoding="utf-8")

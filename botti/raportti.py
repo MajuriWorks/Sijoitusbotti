@@ -176,7 +176,8 @@ def _tietopohjahtml(sig, paiva, paatokset, lahdetila) -> str:
             ehd = "<br>".join(f"<b>{html.escape(e['osake'])}</b> {html.escape(e['perustelu'])}" for e in p["ehdokkaat"][:3])
             myy = "<br>".join(f"<b>{html.escape(t)}</b> {html.escape(s)}" for t, s in p.get("myydaan", {}).items())
             rivit.append([html.escape(p["botti"]), html.escape(", ".join(p["pidetaan"]) or "–"),
-                          myy or "–", html.escape(p.get("estetty", "")) or ehd or "–"])
+                          myy or "–", ((f"<i>{html.escape(p['estetty'])}</i><br>" if p.get("estetty") else "")
+                                       + (ehd or "–"))])
         osat.append("<h3>Bottien päätökset tänään</h3>" + _taulukko(
             rivit, ["Botti / osa", "Pidetään", "Myydään", "Parhaat ostoehdokkaat"], "pieni"))
     lahteet = {k: v for k, v in lahdetila.items() if not k.startswith("_")}

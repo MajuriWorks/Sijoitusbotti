@@ -32,7 +32,8 @@ def _hiipuva(impulssit: pd.DataFrame, puoliintuminen: float) -> pd.DataFrame:
 
 
 def _onko_maailma(u: Uutinen) -> bool:
-    return (u.lahde in ("maailma", "testi", "suuret_mediat", "rss_syotteet") and not u.tickerit) or u.tyyppi == "maailma"
+    return (u.lahde in ("maailma", "testi", "suuret_mediat", "rss_syotteet", "jattiyhtiot") and not u.tickerit) \
+        or u.tyyppi == "maailma"
 
 
 class Signaalit:
@@ -90,6 +91,38 @@ class Signaalit:
         self.maailma_pitka = (m_s / m_n.replace(0, np.nan)).fillna(0)
         self.onko_dataa = len(uutiset) > 0
 
+        # Vakavat kielteiset uutiset: kriisitaso (maailma) ja hätäsignaali (yhtiöt)
+        vakava_maailma = pd.Series(0.0, index=paivat)
+        vakava = nolla()
+        self.vakavat_otsikot: dict[tuple, Uutinen] = {}
+        for u in uutiset:
+            if not u.lisatieto.get("vakava"):
+                continue
+            i = self._paiva_indeksi(u.aika)
+            if i is None:
+                continue
+            if _onko_maailma(u):
+                vakava_maailma.iloc[i] += 1
+            for t in u.tickerit:
+                if t in vakava.columns:
+                    vakava.iat[i, vakava.columns.get_loc(t)] += u.tunnelma * u.paino
+                    vanha = self.vakavat_otsikot.get((t, i))
+                    if vanha is None or u.tunnelma < vanha.tunnelma:
+                        self.vakavat_otsikot[(t, i)] = u
+        self.vakava = _hiipuva(vakava, 1)
+        # Kriisitaso = vakavien maailmanuutisten määrä suhteessa tavalliseen (1 = normaali päivä)
+        # Vertailutaso lasketaan vain päiviltä, joilta uutisia on kerätty, ja vasta kun niitä on
+        # vähintään 10 (muuten uusien lähteiden lisääminen näyttäisi kriisiltä).
+        keratty = lkm.copy()
+        for u in uutiset:
+            i = self._paiva_indeksi(u.aika)
+            if i is not None:
+                keratty.iloc[i] += 1
+        mukana = vakava_maailma.where(keratty.cumsum() > 0)
+        perus = mukana.rolling(20, min_periods=10).median().shift(1)
+        self.vakavat_maailma = vakava_maailma
+        self.kriisitaso = (vakava_maailma / perus.clip(lower=3)).fillna(0)
+
     @classmethod
     def tyhja(cls, paivat, tickerit) -> "Signaalit":
         """Historiatestiin: uutisia ei ole saatavilla -> kaikki signaalit nollia."""
@@ -107,6 +140,22 @@ class Signaalit:
             return None
         i = int(self.paivat.searchsorted(pv))           # ensimmäinen kauppapäivä >= uutisen päivä
         return min(i, len(self.paivat) - 1)
+
+    def kriisissa(self, paiva) -> bool:
+        """Poikkeuksellisen paljon vakavia maailmanuutisia (sodat, katastrofit, romahdukset)."""
+        return bool(self.kriisitaso.loc[paiva] >= 2.5 and self.vakavat_maailma.loc[paiva] >= 8)
+
+    def hatauutinen(self, ticker: str, paiva) -> Uutinen | None:
+        """Vakava kielteinen uutinen yhtiöstä viimeisen päivän aikana -> myydään heti."""
+        if ticker not in self.vakava.columns or self.vakava.at[paiva, ticker] > -0.4:
+            return None
+        i = int(self.paivat.searchsorted(paiva))
+        return self.vakavat_otsikot.get((ticker, i)) or self.vakavat_otsikot.get((ticker, i - 1))
+
+    def kielteinen_uutinen(self, ticker: str, paiva) -> bool:
+        if ticker not in self.uutis_lyhyt.columns:
+            return False
+        return bool(self.uutis_lyhyt.at[paiva, ticker] < -0.2) or self.hatauutinen(ticker, paiva) is not None
 
     def tuorein_otsikko(self, ticker: str, paiva: pd.Timestamp, pv: int = 5) -> Uutinen | None:
         """Painavin uutinen viimeisten päivien ajalta (perusteluihin)."""

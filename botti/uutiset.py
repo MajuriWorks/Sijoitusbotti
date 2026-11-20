@@ -361,6 +361,11 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
             aja("maailma", google_news, h, kieli, 1, oletus="maailma", tickerit_=[])
             time.sleep(0.7)
 
+    # 3b) Markkinaa liikuttavat jättiyhtiöt (Nvidia, Apple...): niiden kohut vaikuttavat koko markkinaan
+    for nimi in ucfg.get("seuranta_yhtiot", []):
+        aja("jattiyhtiot", lambda q: google_news(q, "en", 1)[:20], f'"{nimi}"', oletus="maailma", tickerit_=[])
+        time.sleep(0.7)
+
     # 4) Suuret mediat: talous- ja pääuutiset suoraan (Reuters, Bloomberg, CNN, BBC, HS, Yle...)
     if lahteet.get("suuret_mediat", True):
         for sivu in ucfg.get("mediat", []):
@@ -495,6 +500,26 @@ KLIKKI = re.compile(r"^\d+ (stocks?|osaketta|dividend|best)|to consider|should y
                     r"top \d+|\?$|what to expect|preview|watchlist|kannattaako", re.I)
 
 
+VAKAVA = re.compile(
+    r"\b(war|invasion|invade|missile|airstrike|terror\w*|earthquake|tsunami|hurricane|flood\w*|pandemic|outbreak|"
+    r"epidemic|nuclear|coup|martial law|bankrupt\w*|insolven\w*|chapter 11|fraud|scandal|embezzl\w*|bribery|"
+    r"indict\w*|arrest\w*|charged|probe|raid\w*|resign\w*|ousted|fired|steps down|sanction\w*|export ban|"
+    r"export controls?|embargo|blacklist\w*|cyber ?attack|hack\w*|data breach|recall\w*|default\w*|crash\w*|"
+    r"collapse\w*|plung\w*|plummet\w*|trading halt|suspend\w*|profit warning|guidance cut|misconduct|"
+    r"harass\w*|lawsuit|class action|"
+    r"sota\w*|hyökkäy\w*|ohjus\w*|terrori\w*|maanjäristy\w*|tulva\w*|pandemi\w*|vallankaappau\w*|"
+    r"konkurss\w*|saneerau\w*|petos\w*|skandaal\w*|kavallu\w*|lahjo\w*|pidätet\w*|syyte\w*|tutkinta\w*|"
+    r"eroaa|erosi|erotettiin|irtisanottiin|pakott\w*|vientikiel\w*|kyberhyökkäy\w*|tietomurto\w*|"
+    r"takaisinve\w*|romah\w*|tulosvaroitu\w*|kaupankäynti keskeytet\w*)\b", re.I)
+
+
+def vakavuus(u: Uutinen) -> None:
+    """Merkitsee vakavat kielteiset uutiset (kriisit, katastrofit, skandaalit). Niihin reagoidaan heti."""
+    if u.tunnelma < -0.2 and VAKAVA.search(u.otsikko):
+        u.lisatieto["vakava"] = True
+        u.paino = max(u.paino, 0.9)
+
+
 def laatupainotus(u: Uutinen) -> None:
     julkaisija = u.lisatieto.get("julkaisija", "")
     kerroin = 1.0
@@ -505,6 +530,7 @@ def laatupainotus(u: Uutinen) -> None:
     if KLIKKI.search(u.otsikko):
         kerroin *= 0.3
     u.paino = round(min(1.0, u.paino * kerroin), 2)
+    vakavuus(u)
 
 
 def uudelleentulkitse_arkisto(nimet: dict[str, str], paivia: int = 14) -> int:
@@ -581,5 +607,6 @@ def synteettiset_uutiset(tickerit: list[str], asti, paivia: int = 120, siemen: i
             out.append(Uutinen(aika=(d + pd.Timedelta(hours=rnd.randint(7, 17))).tz_localize("Europe/Helsinki").isoformat(),
                                otsikko=f"TESTI {d.date()} #{k}: {t} {tyyppi} {'hyvä' if tun > 0 else 'huono'} uutinen",
                                lahde="testi", tickerit=[] if tyyppi == "maailma" else [t], tyyppi=tyyppi,
-                               tunnelma=tun, paino=round(rnd.uniform(0.2, 1), 2), tulkinta="testi"))
+                               tunnelma=tun, paino=round(rnd.uniform(0.2, 1), 2), tulkinta="testi",
+                               lisatieto={"vakava": True} if tun < -0.9 else {}))
     return out

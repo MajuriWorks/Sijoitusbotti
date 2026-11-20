@@ -3,8 +3,14 @@ name: Päivittäinen leikkikauppa
 
 on:
   schedule:
-    - cron: "45 17 * * 1-5"   # ma–pe 17:45 UTC = 19:45 Suomen talviaikaa (20:45 kesäaikaa)
+    - cron: "45 17 * * 1-5"   # ilta: ma–pe 17:45 UTC = 19:45 Suomen talviaikaa (20:45 kesäaikaa)
+    - cron: "15 6 * * 1-5"    # aamutarkistus: 06:15 UTC = 8:15 Suomen talviaikaa, ennen pörssin avausta klo 10
   workflow_dispatch:           # "Run workflow" -nappi käsin ajamiseen
+    inputs:
+      aamu:
+        description: "Aamutarkistus (vain yön uutiset, ei uutta kauppapäivää)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -47,13 +53,18 @@ jobs:
       - name: Aja botit oikeilla kursseilla ja päivitä raporttisivu
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # valinnainen: tekoälytulkinta uutisille
-        run: python paivittainen.py --julkaise
+        run: |
+          if [ "${{ github.event.schedule }}" = "15 6 * * 1-5" ] || [ "${{ github.event.inputs.aamu }}" = "true" ]; then
+            python paivittainen.py --julkaise --aamu
+          else
+            python paivittainen.py --julkaise
+          fi
 
       - name: Tallenna salkkujen tila
         run: |
           git config user.name "sijoitusbotti"
           git config user.email "sijoitusbotti@users.noreply.github.com"
           git add tila arkisto docs
-          git diff --cached --quiet || git commit -m "Leikkikauppa $(date +%F)"
+          git diff --cached --quiet || git commit -m "Leikkikauppa $(date +%F) $( [ '${{ github.event.schedule }}' = '15 6 * * 1-5' ] && echo aamu || echo ilta )"
           git pull --rebase
           git push

@@ -135,6 +135,18 @@ uutiset:
     - recession fears
     - oil price
     - geopolitical tensions markets
+  # Markkinaa liikuttavat jättiyhtiöt: niiden kohut ja kriisit vaikuttavat koko markkinaan
+  seuranta_yhtiot:
+    - Nvidia
+    - Apple
+    - Microsoft
+    - Alphabet Google
+    - Amazon
+    - Meta Platforms
+    - Tesla
+    - TSMC
+    - ASML
+    - Broadcom
   # Suuret mediat: päivän tuoreimmat jutut sivustoittain (Google News -haku)
   mediat:
     - reuters.com

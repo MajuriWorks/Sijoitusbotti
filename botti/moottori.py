@@ -52,6 +52,22 @@ class Moottori:
                     syy=f"{syy}: kurssi {h / p.huippu - 1:.1%} huipusta, {h / p.hankintahinta - 1:+.1%} ostohinnasta"))
                 myytavana.add(t)
 
+        # 2b) Hätämyynti: vakava kielteinen uutinen omistetusta yhtiöstä (skandaali, petos, tulosvaroitus...)
+        sig = getattr(strategia, "sig", None)
+        if sig is not None and getattr(strategia, "kayta_stop_lossia", True):
+            for t, p in salkku.positiot.items():
+                if t in myytavana:
+                    continue
+                u = sig.hatauutinen(t, paiva)
+                if u is not None:
+                    salkku.odottavat.append(Toimeksianto(
+                        t, "MYY", kpl=p.kpl, annettu=str(paiva.date()),
+                        syy=f"HÄTÄMYYNTI: vakava uutinen: {u.otsikko[:100]}"))
+                    myytavana.add(t)
+            # Perutaan toteutumattomat ostot osakkeista, joista on tullut kielteinen uutinen
+            salkku.odottavat = [o for o in salkku.odottavat
+                                if o.suunta != "OSTA" or not sig.kielteinen_uutinen(o.ticker, paiva)]
+
         # 3) Strategian päätös
         if strategia.onko_paatospaiva(paiva, salkku.viimeisin_paatos):
             salkku.viimeisin_paatos = str(paiva.date())
@@ -89,7 +105,7 @@ class Moottori:
                 "pidetaan": sorted(omistukset & ehd.pidettavat),
                 "ehdokkaat": [{"osake": t, "perustelu": ehd.perustelut.get(t, "")} for t in ehd.ostettavat[:10]],
                 "myydaan": {t: ehd.perustelut.get(t, "") for t in sorted(omistukset - ehd.pidettavat)},
-                "estetty": ehd.estetty,
+                "estetty": ehd.estetty or ehd.varovaisuus,
             })
 
         myydaan = omistukset - ehd.pidettavat
