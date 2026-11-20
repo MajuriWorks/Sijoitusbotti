@@ -63,6 +63,25 @@ def julkaise(sivu: str, paiva: pd.Timestamp) -> None:
         encoding="utf-8")
 
 
+def uutisjarjestys(cfg: dict, paneeli, tila: dict) -> list[str]:
+    """Yhtiöuutiset haetaan tärkeysjärjestyksessä (hakuja on rajallisesti):
+    omistukset ja odottavat kaupat -> perusvalikoima -> laajan valikoiman vahvimmat nousijat."""
+    tarkeat = []
+    for d in tila.get("botit", {}).values():
+        tarkeat += list(d.get("positiot", {})) + [o["ticker"] for o in d.get("odottavat", [])]
+    perus = cfg["valikoimat_tickerit"].get("perus", [])
+    muut = [t for t in cfg["tickerit"] if t not in perus]
+    if muut:
+        c = paneeli.paatos[[t for t in muut if t in paneeli.paatos.columns]]
+        nousu = (c.iloc[-1] / c.iloc[-21] - 1).abs().sort_values(ascending=False)   # isoimmat liikkeet ensin
+        muut = list(nousu.index) + [t for t in muut if t not in nousu.index]
+    jarjestys = []
+    for t in tarkeat + perus + muut:
+        if t not in jarjestys:
+            jarjestys.append(t)
+    return jarjestys
+
+
 def aamutarkistus(tila: dict, sig: Signaalit, paiva) -> list[str]:
     """Yön aikana (USA, Aasia) tulleet vakavat uutiset ennen pörssin avautumista:
     - omistetusta yhtiöstä vakava kielteinen uutinen -> myydään avauksessa
@@ -159,7 +178,7 @@ def main():
             lahdetila = {"_yhteenveto": {"uusia": len(uudet), "tekoaly": 0, "tulkinta": "testidata"}}
         else:
             print("Kerätään uutisia...")
-            uudet, lahdetila = uutismoduuli.keraa(cfg, cfg["tickerit"])
+            uudet, lahdetila = uutismoduuli.keraa(cfg, uutisjarjestys(cfg, paneeli, tila))
             n = uutismoduuli.uudelleentulkitse_arkisto(uutismoduuli.lataa_nimet(cfg["tickerit"]))
             if n:
                 print(f"  {n} aiempaa uutista tulkittu uudelleen")

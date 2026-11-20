@@ -147,9 +147,12 @@ def hakunimi(nimi: str) -> str:
     return re.sub(r"\s+", " ", n).strip()
 
 
-def lataa_nimet(tickerit: list[str], polku=Path("arkisto/nimet.json")) -> dict[str, str]:
+def lataa_nimet(tickerit: list[str], polku=Path("arkisto/nimet.json"), valmiit: dict | None = None) -> dict[str, str]:
     """Yhtiöiden nimet uutisten tunnistamiseen. Haetaan Yahoosta kerran ja tallennetaan."""
     nimet = json.loads(polku.read_text(encoding="utf-8")) if polku.exists() else {}
+    for t, n in (valmiit or {}).items():
+        if t not in nimet and n:
+            nimet[t] = hakunimi(n)
     puuttuvat = [t for t in tickerit if t not in nimet]
     if puuttuvat:
         try:
@@ -312,7 +315,7 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
     """Kerää kaikista lähteistä. Palauttaa (uudet uutiset, lähteiden tila)."""
     ucfg = cfg.get("uutiset", {})
     lahteet = ucfg.get("lahteet", {})
-    nimet = lataa_nimet(tickerit)
+    nimet = lataa_nimet(tickerit, valmiit=cfg.get("valmiit_nimet"))
     tila: dict[str, dict] = {}
     raaka: list[tuple[dict, str, str, list[str]]] = []   # (rivi, lähde, oletustyyppi, tickerit)
 

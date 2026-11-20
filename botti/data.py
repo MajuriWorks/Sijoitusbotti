@@ -65,6 +65,10 @@ class Paneeli:
         return Paneeli(self.avaus.iloc[:-1], self.paatos.iloc[:-1], self.vaihto.iloc[:-1],
                        self.puuttuvat, self.matala.iloc[:-1])
 
+    def osajoukko(self, tickerit: list[str]) -> "Paneeli":
+        cols = [t for t in tickerit if t in self.paatos.columns]
+        return Paneeli(self.avaus[cols], self.paatos[cols], self.vaihto[cols], self.puuttuvat, self.matala[cols])
+
     @property
     def tickerit(self) -> list[str]:
         return list(self.paatos.columns)

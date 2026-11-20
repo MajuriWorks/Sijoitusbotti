@@ -12,8 +12,8 @@ import pandas as pd
 from .data import Paneeli
 from .valittaja import Kulumalli, Salkku
 
-VARIT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4"]          # vaalea tila
-VARIT_TUMMA = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181"]    # tumma tila
+VARIT = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#7d5bd8", "#2aa8b8", "#8a8781"]          # vaalea tila
+VARIT_TUMMA = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#9478ea", "#36b5c5", "#a3a199"]    # tumma tila
 
 
 # ---------------------------------------------------------------- luvut
@@ -58,6 +58,13 @@ def tunnusluvut(sarja: pd.Series, alkupaaoma: float, salkku: Salkku | None = Non
         else:
             d["Ennuste vs. toteutunut"] = "–"
             d["Ennusteen suunta oikein"] = "–"
+        # Arvo-osuustili: voitollisista myynneistä 30 % veroa (tappiot vähennetään saman vuoden voitoista)
+        vuodet = {}
+        for k in myynnit:
+            vuodet[k.paiva[:4]] = vuodet.get(k.paiva[:4], 0) + k.voitto
+        verot = sum(max(0, v) * 0.30 for v in vuodet.values())
+        d["Verot arvio (AO-tili 30 %)"] = f"{verot:,.0f} €".replace(",", " ")
+        d["Arvo verojen jälkeen"] = f"{loppu - verot:,.0f} €".replace(",", " ")
         d["Keskim. pitoaika"] = (f"{np.mean([k.pitoaika_pv for k in myynnit]):.0f} pv" if myynnit else "–")
     return d
 
@@ -310,9 +317,9 @@ SIVU = """<!DOCTYPE html>
 <title>{otsikko}</title>
 <style>
 :root{{--pinta:#fcfcfb;--taso:#f9f9f7;--teksti:#0b0b0b;--teksti2:#52514e;--himmea:#898781;--grid:#e1e0d9;--pohja:#c3c2b7;
---s0:{v[0]};--s1:{v[1]};--s2:{v[2]};--s3:{v[3]};--s4:{v[4]};--hyva:#006300;--paha:#c02c2c;--reuna:rgba(11,11,11,.10)}}
+--s0:{v[0]};--s1:{v[1]};--s2:{v[2]};--s3:{v[3]};--s4:{v[4]};--s5:{v[5]};--s6:{v[6]};--s7:{v[7]};--hyva:#006300;--paha:#c02c2c;--reuna:rgba(11,11,11,.10)}}
 @media (prefers-color-scheme:dark){{:root{{--pinta:#1a1a19;--taso:#0d0d0d;--teksti:#f0efec;--teksti2:#c3c2b7;--grid:#2c2c2a;--pohja:#383835;
---s0:{vt[0]};--s1:{vt[1]};--s2:{vt[2]};--s3:{vt[3]};--s4:{vt[4]};--hyva:#0ca30c;--paha:#e66767;--reuna:rgba(255,255,255,.10)}}}}
+--s0:{vt[0]};--s1:{vt[1]};--s2:{vt[2]};--s3:{vt[3]};--s4:{vt[4]};--s5:{vt[5]};--s6:{vt[6]};--s7:{vt[7]};--hyva:#0ca30c;--paha:#e66767;--reuna:rgba(255,255,255,.10)}}}}
 body{{font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--taso);color:var(--teksti);margin:0}}
 main{{max-width:1080px;margin:0 auto;padding:28px 20px 60px}}
 h1{{font-size:24px;margin:0}} h2{{font-size:18px;margin:34px 0 8px}} h3{{font-size:15px;margin:20px 0 6px}}
@@ -328,7 +335,8 @@ table.luvut td:not(:first-child),table.luvut th:not(:first-child){{text-align:ri
 .grid{{stroke:var(--grid);stroke-width:1}} .pohja{{stroke:var(--pohja);stroke-width:1}}
 .akseli{{fill:var(--himmea);font-size:11px}} .nimi{{fill:var(--teksti);font-size:12px}}
 .sarja{{stroke-width:2;stroke-linejoin:round}} .s0,.t0{{stroke:var(--s0);fill:var(--s0)}} .s1,.t1{{stroke:var(--s1);fill:var(--s1)}}
-.s2,.t2{{stroke:var(--s2);fill:var(--s2)}} .s3,.t3{{stroke:var(--s3);fill:var(--s3)}} .s4,.t4{{stroke:var(--s4);fill:var(--s4)}} polyline.sarja{{fill:none}}
+.s2,.t2{{stroke:var(--s2);fill:var(--s2)}} .s3,.t3{{stroke:var(--s3);fill:var(--s3)}} .s4,.t4{{stroke:var(--s4);fill:var(--s4)}}
+.s5,.t5{{stroke:var(--s5);fill:var(--s5)}} .s6,.t6{{stroke:var(--s6);fill:var(--s6)}} .s7,.t7{{stroke:var(--s7);fill:var(--s7)}} polyline.sarja{{fill:none}}
 .risti{{stroke:var(--pohja);stroke-width:1}}
 .vihje{{position:absolute;pointer-events:none;background:var(--pinta);border:1px solid var(--reuna);border-radius:6px;padding:6px 10px;font-size:12px;box-shadow:0 2px 8px rgba(0,0,0,.12);white-space:nowrap}}
 .vihje b{{display:block;margin-bottom:2px}}

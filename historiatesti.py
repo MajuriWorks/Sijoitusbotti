@@ -44,9 +44,10 @@ def main():
     a = ap.parse_args()
 
     cfg = lataa_asetukset(a.config, a.kuluprofiili)
-    print(f"Ladataan kurssit ({len(cfg['tickerit'])} kohdetta)...")
-    paneeli = (synteettinen_paneeli(cfg["tickerit"], cfg["historia_alku"]) if a.testidata
-               else lataa_paneeli(cfg["tickerit"], cfg["historia_alku"]))
+    tickerit = cfg["valikoimat_tickerit"].get("perus", cfg["tickerit"])
+    print(f"Ladataan kurssit ({len(tickerit)} kohdetta)...")
+    paneeli = (synteettinen_paneeli(tickerit, cfg["historia_alku"]) if a.testidata
+               else lataa_paneeli(tickerit, cfg["historia_alku"]))
     testialku = paneeli.paatos.index[min(LAMMITYS_PV, len(paneeli.paatos) - 1)]
     if a.alku:
         testialku = max(testialku, pd.Timestamp(a.alku))

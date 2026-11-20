@@ -90,8 +90,34 @@ osakkeet:
     - EXSA.DE    # iShares STOXX Europe 600 – Eurooppa
     - IS3N.DE    # iShares Core MSCI EM IMI – kehittyvät markkinat
     - QDV5.DE    # iShares MSCI India – Intia
-  # USA:n osakkeet: kalliit kulut 1000 €:n salkulle -> oletuksena pois
+  # USA:n osakkeet erikseen (vapaa lista)
   usa: []
+  # --- Laaja valikoima (käytössä "laaja"-boteilla) ---
+  usa_sp500: auto          # S&P 500 -yhtiöt, haetaan automaattisesti
+  usa_nasdaq100: auto      # Nasdaq-100 -yhtiöt, haetaan automaattisesti
+  etf_laaja:               # suosittuja ETF:iä ja raaka-aineita (Xetra, euroina)
+    - VWCE.DE    # Vanguard FTSE All-World
+    - SXRV.DE    # iShares Nasdaq 100
+    - EXXT.DE    # iShares Nasdaq-100 (DE)
+    - SXRT.DE    # iShares Euro Stoxx 50
+    - EXS1.DE    # iShares DAX
+    - IUSN.DE    # iShares MSCI World Small Cap
+    - EUNM.DE    # iShares MSCI EM
+    - XDWT.DE    # Xtrackers MSCI World IT
+    - XDWH.DE    # Xtrackers MSCI World Health Care
+    - XDWF.DE    # Xtrackers MSCI World Financials
+    - IQQH.DE    # iShares Global Clean Energy
+    - 4GLD.DE    # Xetra-Gold (kulta)
+    - ZPRV.DE    # SPDR US Small Cap Value
+    - DFNS.DE    # VanEck Defense
+    - XAIX.DE    # Xtrackers AI & Big Data
+
+# ---------------- Valikoimat ----------------
+# perus = v1-bottien alkuperäinen valikoima (ei muuteta lukitusjakson aikana)
+# laaja = kaikki, mihin Nordnetissa voi sijoittaa ja mistä on kurssidataa
+valikoimat:
+  perus: [helsinki, pohjoismaat, etf]
+  laaja: [helsinki, pohjoismaat, etf, etf_laaja, usa, usa_sp500, usa_nasdaq100]
 
 # ---------------- Botit ----------------
 # Kaikki botit käyttävät samaa tietopohjaa (kurssit, uutiset, tiedotteet, analyytikot,
@@ -110,6 +136,25 @@ botit:
     kaytossa: true
     versio: v1            # Vertailukohta: maailmanindeksi ostettuna ja pidettynä
     etf: EUNL.DE
+  # Samat v1-säännöt, mutta koko laaja valikoima (lisätty 20.11.2026)
+  lyhyt_laaja:
+    kaytossa: true
+    versio: v1
+    pohja: lyhyt
+    nimi: Lyhyt laaja
+    valikoima: laaja
+  pitka_laaja:
+    kaytossa: true
+    versio: v1
+    pohja: pitka
+    nimi: Pitkä laaja
+    valikoima: laaja
+  yhdistelma_laaja:
+    kaytossa: true
+    versio: v1
+    pohja: yhdistelma
+    nimi: Yhdistelmä laaja
+    valikoima: laaja
   # Uusi versio lisätään RINNALLE näin (vanha jatkaa ennallaan):
   # lyhyt_v2:
   #   kaytossa: true
@@ -130,7 +175,7 @@ uutiset:
   # Tekoälytulkinta otetaan käyttöön lisäämällä GitHubiin salaisuus ANTHROPIC_API_KEY.
   # Ilman sitä uutiset tulkitaan avainsanoilla.
   tekoaly_malli: claude-haiku-5-5
-  max_yhtiohakuja: 200
+  max_yhtiohakuja: 300
   lue_artikkelit: true             # luetaan tärkeimpien uutisten teksti, ei vain otsikkoa
   max_luettavia_artikkeleita: 150  # per ajo
   lahteet:

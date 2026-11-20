@@ -31,16 +31,23 @@ def aja_kaikki(cfg: dict, paneeli, tila_botit: dict, alku, aloitus=None):
     lukitut = cfg.get("versiot", {})
     for versio, botit in ryhmat.items():
         M = lataa_versio(versio)
-        sig = M["signaalit"].Signaalit(M["uutiset"].lataa_arkisto(), paneeli.paatos.index, paneeli.tickerit)
+        uutiset = M["uutiset"].lataa_arkisto()
+        signaalit = {}
         moottori = M["moottori"].Moottori(cfg)
         moottori.paatosloki = []
         for nimi, pohja in botit:
+            # Botin oma valikoima (oletus "perus" = v1-bottien alkuperäinen)
+            vnimi = cfg["botit"][nimi].get("valikoima", "perus")
+            oma = paneeli.osajoukko(cfg["valikoimat_tickerit"].get(vnimi, paneeli.tickerit))
+            if vnimi not in signaalit:
+                signaalit[vnimi] = M["signaalit"].Signaalit(uutiset, oma.paatos.index, oma.tickerit)
+            sig = signaalit[vnimi]
             def avain(osa, nimi=nimi, pohja=pohja):
                 return osa if nimi == pohja else f"{osa}@{nimi}"
             vcfg = dict(cfg, kaytossa_botit=[pohja])
             osatila = {osa: tila_botit[avain(osa)] for osa, *_ in M["botit"].OSAT[pohja] if avain(osa) in tila_botit}
             oma_alku = aloitus if (cfg["botit"][nimi].get("aloita") == "alusta" and aloitus is not None) else alku
-            t, h, ot = M["botit"].aja_botit(vcfg, paneeli, sig, moottori, osatila, alku=oma_alku)
+            t, h, ot = M["botit"].aja_botit(vcfg, oma, sig, moottori, osatila, alku=oma_alku)
             for osa, d in ot.items():
                 uusi_tila[avain(osa)] = d
             for x in t:
