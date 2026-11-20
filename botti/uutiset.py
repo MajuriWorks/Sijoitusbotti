@@ -361,7 +361,17 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
             aja("maailma", google_news, h, kieli, 1, oletus="maailma", tickerit_=[])
             time.sleep(0.7)
 
-    # 4) Foorumit
+    # 4) Suuret mediat: talous- ja pääuutiset suoraan (Reuters, Bloomberg, CNN, BBC, HS, Yle...)
+    if lahteet.get("suuret_mediat", True):
+        for sivu in ucfg.get("mediat", []):
+            kieli = "fi" if sivu.endswith(".fi") else ("sv" if sivu.endswith((".se", ".no")) else "en")
+            aja("suuret_mediat", lambda q, k: google_news(q, k, 1)[:30], f"site:{sivu}", kieli, oletus="maailma")
+            time.sleep(0.7)
+        for url in ucfg.get("rss_syotteet", []):
+            aja("rss_syotteet", lambda u: _rss(u)[:40], url, oletus="maailma")
+            time.sleep(0.5)
+
+    # 5) Foorumit
     if lahteet.get("inderes_foorumi", True):
         aja("inderes_foorumi", inderes_foorumi, oletus="foorumi")
     if lahteet.get("reddit", True):
@@ -377,6 +387,8 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
         if not r.get("otsikko") or r["aika"] < raja:
             continue
         tyyppi = paattele_tyyppi(r["otsikko"], oletus)
+        if not r.get("julkaisija") and lahde == "rss_syotteet":
+            r["julkaisija"] = re.sub(r"^www\.|/.*$", "", r.get("linkki", "").split("//")[-1])
         if tt and lahde in ("google_yhtiot", "yahoo"):
             # Yhtiöhaun tulos kelpaa vain, jos yhtiö mainitaan otsikossa (muuten uutinen koskee jotain muuta)
             if not tunnista_tickerit(r["otsikko"], {t: nimet[t] for t in tt}):
@@ -385,6 +397,10 @@ def keraa(cfg: dict, tickerit: list[str]) -> tuple[list[Uutinen], dict]:
             tt = tunnista_tickerit(r["otsikko"], nimet)
             if oletus == "foorumi" and not tt:
                 continue  # foorumiviesti, jossa ei mainita seurattua yhtiötä
+            if oletus == "maailma" and tt and tyyppi == "maailma":
+                tyyppi = "uutinen"   # suuren median juttu, jossa mainitaan seurattu yhtiö
+        if oletus == "maailma" and not tt and lahde in ("suuret_mediat", "rss_syotteet"):
+            tt = []
         u = Uutinen(aika=r["aika"].isoformat(timespec="seconds"), otsikko=r["otsikko"], lahde=lahde,
                     linkki=r.get("linkki", ""), tickerit=tt, tyyppi=tyyppi,
                     lisatieto={k: r[k] for k in ("julkaisija", "viestit", "katselut", "pisteet") if k in r})

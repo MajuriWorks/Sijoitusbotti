@@ -32,7 +32,7 @@ def _hiipuva(impulssit: pd.DataFrame, puoliintuminen: float) -> pd.DataFrame:
 
 
 def _onko_maailma(u: Uutinen) -> bool:
-    return u.lahde in ("maailma", "testi") and not u.tickerit or u.tyyppi == "maailma"
+    return (u.lahde in ("maailma", "testi", "suuret_mediat", "rss_syotteet") and not u.tickerit) or u.tyyppi == "maailma"
 
 
 class Signaalit:
