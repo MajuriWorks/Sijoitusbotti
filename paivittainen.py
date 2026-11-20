@@ -20,7 +20,7 @@ import pandas as pd
 from botti import lataa_asetukset
 from botti.data import Paneeli, lataa_paneeli, synteettinen_paneeli
 from botti import uutiset as uutismoduuli
-from botti.botit import aja_botit
+from botti.versiot import aja_kaikki
 from botti.moottori import Moottori
 from botti.raportti import html_raportti, markkinasarja
 from botti.signaalit import Signaalit
@@ -169,12 +169,13 @@ def main():
 
     aamuhuomiot = aamutarkistus(tila, sig, viimeisin) if a.aamu else []
 
-    moottori = Moottori(cfg)
-    moottori.paatosloki = []
+    moottori = Moottori(cfg)          # raportin kulumallia varten
     if a.aamu:   # aamulla ei käsitellä uusia kauppapäiviä, vain muutetaan odottavia toimeksiantoja
         tila["viimeisin_kasitelty"] = tila.get("viimeisin_kasitelty") or str(viimeisin.date())
-    tulokset, huomiot, tila["botit"] = aja_botit(cfg, paneeli, sig, moottori, tila["botit"],
-                                                 alku=max(aloitus, viimeisin))
+    # Jokainen botti ajetaan omalla lukitulla versiollaan (versiot/), rinnakkain samoilla tiedoilla
+    tulokset, huomiot, tila["botit"], paatosloki = aja_kaikki(cfg, paneeli, tila["botit"],
+                                                              alku=max(aloitus, viimeisin), aloitus=aloitus)
+    moottori.paatosloki = paatosloki
 
     huomiot = aamuhuomiot + huomiot
     tila["viimeisin_kasitelty"] = str(viimeisin.date())

@@ -19,5 +19,6 @@ def lataa_asetukset(polku: str | Path = "config.yaml", kuluprofiili: str | None 
     if etf and etf not in tickerit:
         tickerit.append(etf)
     cfg["tickerit"] = tickerit
-    cfg["kaytossa_botit"] = [b for b, a in cfg["botit"].items() if a.get("kaytossa")]
+    # Historiatesti ajaa perusbotit nykyisellä koodilla; leikkikauppa ajaa jokaisen botin omalla versiollaan
+    cfg["kaytossa_botit"] = [b for b, a in cfg["botit"].items() if a.get("kaytossa") and "pohja" not in a]
     return cfg

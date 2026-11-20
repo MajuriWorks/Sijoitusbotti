@@ -98,14 +98,31 @@ osakkeet:
 # johdon kaupat, foorumit, maailman tapahtumat). Ero on aikajänteessä.
 botit:
   lyhyt:
-    kaytossa: true        # Päivittäin: tuoreet uutiset + kurssiliike, pito päivistä ~3 viikkoon
+    kaytossa: true
+    versio: v1            # Päivittäin: tuoreet uutiset + kurssiliike, pito päivistä ~3 viikkoon
   pitka:
-    kaytossa: true        # Kuukausittain: tasainen nousu + uutisvirta, pito kuukausista vuosiin
+    kaytossa: true
+    versio: v1            # Kuukausittain: tasainen nousu + uutisvirta, pito kuukausista vuosiin
   yhdistelma:
-    kaytossa: true        # 60 % Pitkä + 40 % Lyhyt
+    kaytossa: true
+    versio: v1            # 60 % Pitkä + 40 % Lyhyt
   indeksi:
-    kaytossa: true        # Vertailukohta: maailmanindeksi ostettuna ja pidettynä
+    kaytossa: true
+    versio: v1            # Vertailukohta: maailmanindeksi ostettuna ja pidettynä
     etf: EUNL.DE
+  # Uusi versio lisätään RINNALLE näin (vanha jatkaa ennallaan):
+  # lyhyt_v2:
+  #   kaytossa: true
+  #   versio: v2
+  #   pohja: lyhyt
+  #   nimi: Lyhyt
+  #   aloita: alusta     # ajetaan leikkikaupan alusta tallennetuilla tiedoilla -> vertailukelpoinen
+
+# Lukitut versiot: koodi kansiossa versiot/<versio>/botti, ei muokata
+versiot:
+  v1:
+    lukittu: "2026-11-20"
+    muutos: "ensimmäinen lukittu versio (uutiset, tekstin luku, kriisit, 4 tarkastajaa, osingot)"
 
 # ---------------- Uutiset, foorumit ja maailma ----------------
 uutiset:

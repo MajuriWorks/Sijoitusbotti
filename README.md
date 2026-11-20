@@ -55,6 +55,16 @@ ja päivittää raporttisivun, jota voit katsoa puhelimella milloin vain.
 Raporttisivulla näkyvät toimeksiannot, salkkujen arvo, tuotot viikoittain, kuukausittain ja
 vuosittain sekä linkit raporttiarkistoon ja historiatestiin.
 
+## Versiot: muutokset rinnalle, ei päälle
+
+Botit on lukittu versioiksi (kansio `versiot/v1/`). Lukittuun versioon ei kosketa.
+Kun sääntöjä halutaan muuttaa:
+1. Kopioi uusin versio uudeksi (`versiot/v2/`) ja tee muutokset siihen.
+2. Lisää `config.yaml`:iin uusi botti, jolla on `versio: v2` ja `pohja: lyhyt` (tai pitka/yhdistelma).
+   Lisäksi `aloita: alusta` ajaa sen leikkikaupan alusta asti tallennetuilla kursseilla ja uutisilla,
+   jolloin se on suoraan vertailukelpoinen vanhan kanssa.
+3. Vanha botti jatkaa ennallaan. Raportissa ne näkyvät rinnakkain (esim. "Lyhyt v1" ja "Lyhyt v2").
+
 ## Varmistukset: mikään ei mene hukkaan
 
 - **Koko historia tallessa.** Jokainen päivä tallennetaan GitHubiin omana versionaan. Minkä tahansa päivän tilan voi palauttaa.
