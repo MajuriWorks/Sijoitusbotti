@@ -11,13 +11,17 @@
      "kpl": 39,
      "hankintahinta": 12.5359505389554,
      "ostopaiva": "2026-11-16",
-     "huippu": 12.274412077416939
+     "huippu": 12.274412077416939,
+     "odotettu": 0.0,
+     "viite_kurssi": 12.214129197646406
     },
     "TELIA1.HE": {
      "kpl": 108,
      "hankintahinta": 4.6113332112630205,
      "ostopaiva": "2026-11-16",
-     "huippu": 4.5279998779296875
+     "huippu": 4.5279998779296875,
+     "odotettu": 0.0,
+     "viite_kurssi": 4.52400016784668
     }
    },
    "odottavat": [],
@@ -31,7 +35,9 @@
      "kulu": 10.2,
      "syy": "pisteet +1.04, 20 pv nousu +17.0% | uutinen (+): UBS raises its price target for Ambu to DKK 93 (72), reiterates neutral",
      "voitto": null,
-     "pitoaika_pv": null
+     "pitoaika_pv": null,
+     "odotettu": null,
+     "toteutunut": null
     },
     {
      "paiva": "2026-11-16",
@@ -42,7 +48,9 @@
      "kulu": 9.0,
      "syy": "pisteet +0.77, 20 pv nousu +22.7% | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
      "voitto": null,
-     "pitoaika_pv": null
+     "pitoaika_pv": null,
+     "odotettu": null,
+     "toteutunut": null
     }
    ],
    "kulut_yht": 19.2,
@@ -51,9 +59,10 @@
     "2026-11-16": 978.02,
     "2026-11-17": 964.55,
     "2026-11-18": 956.86,
-    "2026-11-19": 948.06
+    "2026-11-19": 948.06,
+    "2026-11-20": 947.19
    },
-   "viimeisin_paatos": "2026-11-19"
+   "viimeisin_paatos": "2026-11-20"
   },
   "pitka": {
    "kateinen": 29.18533490891315,
@@ -62,16 +71,32 @@
      "kpl": 108,
      "hankintahinta": 4.6113332112630205,
      "ostopaiva": "2026-11-16",
-     "huippu": 4.5279998779296875
+     "huippu": 4.5279998779296875,
+     "odotettu": 0.0,
+     "viite_kurssi": 4.52400016784668
     },
     "EQNR.OL": {
      "kpl": 12,
      "hankintahinta": 39.399223189556714,
      "ostopaiva": "2026-11-16",
-     "huippu": 38.55255652289005
+     "huippu": 38.55255652289005,
+     "odotettu": 0.0,
+     "viite_kurssi": 37.521885107684746
     }
    },
-   "odottavat": [],
+   "odottavat": [
+    {
+     "ticker": "EQNR.OL",
+     "suunta": "MYY",
+     "summa": 0.0,
+     "kpl": 12,
+     "syy": "HÄTÄMYYNTI: vakava uutinen: Equinor says cyberattack has stopped after three days; production unaffected",
+     "annettu": "2026-11-20",
+     "rajahinta": 0.0,
+     "odotettu": 0.0,
+     "voimassa": 3
+    }
+   ],
    "kaupat": [
     {
      "paiva": "2026-11-16",
@@ -82,7 +107,9 @@
      "kulu": 9.0,
      "syy": "12 kk nousu +78.2%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
      "voitto": null,
-     "pitoaika_pv": null
+     "pitoaika_pv": null,
+     "odotettu": null,
+     "toteutunut": null
     },
     {
      "paiva": "2026-11-16",
@@ -93,7 +120,9 @@
      "kulu": 10.16,
      "syy": "12 kk nousu +98.1%, heilunta 35%/v | uutinen (+): Equinor Rises as Higher Oil Prices and Ongoing Buybacks Support Shares",
      "voitto": null,
-     "pitoaika_pv": null
+     "pitoaika_pv": null,
+     "odotettu": null,
+     "toteutunut": null
     }
    ],
    "kulut_yht": 19.16,
@@ -102,7 +131,8 @@
     "2026-11-16": 965.36,
     "2026-11-17": 967.83,
     "2026-11-18": 952.13,
-    "2026-11-19": 936.14
+    "2026-11-19": 936.14,
+    "2026-11-20": 934.34
    },
    "viimeisin_paatos": "2026-11-13"
   },
@@ -113,7 +143,9 @@
      "kpl": 129,
      "hankintahinta": 4.597767319790153,
      "ostopaiva": "2026-11-16",
-     "huippu": 4.5279998779296875
+     "huippu": 4.5279998779296875,
+     "odotettu": 0.0,
+     "viite_kurssi": 4.52400016784668
     }
    },
    "odottavat": [],
@@ -127,7 +159,9 @@
      "kulu": 9.0,
      "syy": "12 kk nousu +78.2%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel",
      "voitto": null,
-     "pitoaika_pv": null
+     "pitoaika_pv": null,
+     "odotettu": null,
+     "toteutunut": null
     }
    ],
    "kulut_yht": 9.0,
@@ -136,7 +170,8 @@
     "2026-11-16": 590.48,
     "2026-11-17": 586.49,
     "2026-11-18": 578.23,
-    "2026-11-19": 569.59
+    "2026-11-19": 569.59,
+    "2026-11-20": 575.39
    },
    "viimeisin_paatos": "2026-11-13"
   },
@@ -147,7 +182,9 @@
      "kpl": 31,
      "hankintahinta": 12.595379819352424,
      "ostopaiva": "2026-11-16",
-     "huippu": 12.274412077416939
+     "huippu": 12.274412077416939,
+     "odotettu": 0.0,
+     "viite_kurssi": 12.214129197646406
     }
    },
    "odottavat": [],
@@ -161,7 +198,9 @@
      "kulu": 9.95,
      "syy": "pisteet +1.04, 20 pv nousu +17.0% | uutinen (+): UBS raises its price target for Ambu to DKK 93 (72), reiterates neutral",
      "voitto": null,
-     "pitoaika_pv": null
+     "pitoaika_pv": null,
+     "odotettu": null,
+     "toteutunut": null
     }
    ],
    "kulut_yht": 9.95,
@@ -170,9 +209,10 @@
     "2026-11-16": 388.18,
     "2026-11-17": 380.14,
     "2026-11-18": 379.52,
-    "2026-11-19": 378.28
+    "2026-11-19": 378.28,
+    "2026-11-20": 373.72
    },
-   "viimeisin_paatos": "2026-11-19"
+   "viimeisin_paatos": "2026-11-20"
   },
   "indeksi": {
    "kateinen": 70.20501708984375,
@@ -181,7 +221,9 @@
      "kpl": 7,
      "hankintahinta": 132.8278547014509,
      "ostopaiva": "2026-11-16",
-     "huippu": 130.68499755859375
+     "huippu": 130.68499755859375,
+     "odotettu": 0.0,
+     "viite_kurssi": 129.97500610351562
     }
    },
    "odottavat": [],
@@ -195,7 +237,9 @@
      "kulu": 15.0,
      "syy": "Osta ja pidä: koko maailman osakemarkkina",
      "voitto": null,
-     "pitoaika_pv": null
+     "pitoaika_pv": null,
+     "odotettu": null,
+     "toteutunut": null
     }
    ],
    "kulut_yht": 15.0,
@@ -204,10 +248,210 @@
     "2026-11-16": 980.03,
     "2026-11-17": 959.77,
     "2026-11-18": 959.94,
-    "2026-11-19": 957.74
+    "2026-11-19": 957.74,
+    "2026-11-20": 929.21
    },
    "viimeisin_paatos": "2026-11-13"
+  },
+  "lyhyt@lyhyt_laaja": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-20": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-20"
+  },
+  "pitka@pitka_laaja": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "SUBC.OL",
+     "suunta": "OSTA",
+     "summa": 490.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +85.3%, heilunta 34%/v | uutinen (+): Subsea 7 (SUBCY) Reports Strong Q3 Results, Highlights Dividend Sustainability Amid Elevat | odotettu +8.0% vs. kulut 4.4%",
+     "annettu": "2026-11-20",
+     "rajahinta": 30.102,
+     "odotettu": 0.08,
+     "voimassa": 3
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-20": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-20"
+  },
+  "yhdistelma_pitka@yhdistelma_laaja": {
+   "kateinen": 600.0,
+   "positiot": {},
+   "odottavat": [
+    {
+     "ticker": "SUBC.OL",
+     "suunta": "OSTA",
+     "summa": 588.0,
+     "kpl": 0,
+     "syy": "12 kk nousu +85.3%, heilunta 34%/v | uutinen (+): Subsea 7 (SUBCY) Reports Strong Q3 Results, Highlights Dividend Sustainability Amid Elevat | odotettu +8.0% vs. kulut 3.8%",
+     "annettu": "2026-11-20",
+     "rajahinta": 30.102,
+     "odotettu": 0.08,
+     "voimassa": 3
+    }
+   ],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-20": 600.0
+   },
+   "viimeisin_paatos": "2026-11-20"
+  },
+  "yhdistelma_lyhyt@yhdistelma_laaja": {
+   "kateinen": 400.0,
+   "positiot": {},
+   "odottavat": [],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-20": 400.0
+   },
+   "viimeisin_paatos": "2026-11-20"
+  },
+  "lyhyt@lyhyt_v2": {
+   "kateinen": 1000.0,
+   "positiot": {},
+   "odottavat": [],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 1000.0,
+    "2026-11-16": 1000.0,
+    "2026-11-17": 1000.0,
+    "2026-11-18": 1000.0,
+    "2026-11-19": 1000.0,
+    "2026-11-20": 1000.0
+   },
+   "viimeisin_paatos": "2026-11-20"
+  },
+  "pitka@pitka_v2": {
+   "kateinen": 42.4467159081982,
+   "positiot": {
+    "TELIA1.HE": {
+     "kpl": 108,
+     "hankintahinta": 4.613233333333333,
+     "ostopaiva": "2026-11-16",
+     "huippu": 4.5299,
+     "odotettu": 0.0697,
+     "viite_kurssi": 4.52400016784668
+    },
+    "DANSKE.CO": {
+     "kpl": 9,
+     "hankintahinta": 51.03600934353354,
+     "ostopaiva": "2026-11-16",
+     "huippu": 49.91156489908909,
+     "odotettu": 0.0659,
+     "viite_kurssi": 49.47190226960701
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
+    {
+     "paiva": "2026-11-16",
+     "ticker": "TELIA1.HE",
+     "suunta": "OSTA",
+     "kpl": 108,
+     "hinta": 4.5299,
+     "kulu": 9.0,
+     "syy": "12 kk nousu +78.7%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel | odotettu +7.0% vs. kulut 4.1%",
+     "voitto": null,
+     "pitoaika_pv": null,
+     "odotettu": 0.0697,
+     "toteutunut": null
+    },
+    {
+     "paiva": "2026-11-16",
+     "ticker": "DANSKE.CO",
+     "suunta": "OSTA",
+     "kpl": 9,
+     "hinta": 49.91156489908909,
+     "kulu": 10.12,
+     "syy": "12 kk nousu +35.8%, heilunta 18%/v | uutinen (+): Wallenius Wilhelmsen hires Danske Bank for $97m bond buyback | teema: Korot nousevat (hyötyy) | odotettu +6.6% vs. kulut 4.3%",
+     "voitto": null,
+     "pitoaika_pv": null,
+     "odotettu": 0.0659,
+     "toteutunut": null
+    }
+   ],
+   "kulut_yht": 19.119999999999997,
+   "arvohistoria": {
+    "2026-11-13": 1000.0,
+    "2026-11-16": 976.29,
+    "2026-11-17": 970.06,
+    "2026-11-18": 958.86,
+    "2026-11-19": 948.27,
+    "2026-11-20": 946.14
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "yhdistelma_pitka@yhdistelma_v2": {
+   "kateinen": 6.642900000000054,
+   "positiot": {
+    "TELIA1.HE": {
+     "kpl": 129,
+     "hankintahinta": 4.599667441860465,
+     "ostopaiva": "2026-11-16",
+     "huippu": 4.5299,
+     "odotettu": 0.0697,
+     "viite_kurssi": 4.52400016784668
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
+    {
+     "paiva": "2026-11-16",
+     "ticker": "TELIA1.HE",
+     "suunta": "OSTA",
+     "kpl": 129,
+     "hinta": 4.5299,
+     "kulu": 9.0,
+     "syy": "12 kk nousu +78.7%, heilunta 34%/v | uutinen (+): DNA, Elisa ja Telia aloittivat Black Friday -kampanjansa – keräsimme jättilistauksen puhel | odotettu +7.0% vs. kulut 3.5%",
+     "voitto": null,
+     "pitoaika_pv": null,
+     "odotettu": 0.0697,
+     "toteutunut": null
+    }
+   ],
+   "kulut_yht": 9.0,
+   "arvohistoria": {
+    "2026-11-13": 600.0,
+    "2026-11-16": 590.24,
+    "2026-11-17": 586.24,
+    "2026-11-18": 577.98,
+    "2026-11-19": 569.34,
+    "2026-11-20": 575.15
+   },
+   "viimeisin_paatos": "2026-11-13"
+  },
+  "yhdistelma_lyhyt@yhdistelma_v2": {
+   "kateinen": 400.0,
+   "positiot": {},
+   "odottavat": [],
+   "kaupat": [],
+   "kulut_yht": 0.0,
+   "arvohistoria": {
+    "2026-11-13": 400.0,
+    "2026-11-16": 400.0,
+    "2026-11-17": 400.0,
+    "2026-11-18": 400.0,
+    "2026-11-19": 400.0,
+    "2026-11-20": 400.0
+   },
+   "viimeisin_paatos": "2026-11-20"
   }
  },
- "viimeisin_kasitelty": "2026-11-19"
+ "viimeisin_kasitelty": "2026-11-20"
 }
