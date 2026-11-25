@@ -98,7 +98,6 @@ def aamutarkistus(tila: dict, sig: Signaalit, paiva, cfg: dict | None = None, pa
     kriisi = sig.kriisissa(paiva)
     # Jokainen botti käyttää oman (lukitun) versionsa hätäsääntöjä
     versiosig = {}
-    uutislista = uutismoduuli.lataa_arkisto()
     seuratut = sorted({t for d in tila.get("botit", {}).values()
                        for t in list(d.get("positiot", {})) + [o["ticker"] for o in d.get("odottavat", [])]})
     for osa, d in tila.get("botit", {}).items():
@@ -108,7 +107,8 @@ def aamutarkistus(tila: dict, sig: Signaalit, paiva, cfg: dict | None = None, pa
             v = _osan_versio(cfg, osa)
             if v not in versiosig:
                 from botti.versiot import lataa_versio
-                versiosig[v] = lataa_versio(v)["signaalit"].Signaalit(uutislista, paneeli.paatos.index, seuratut)
+                M = lataa_versio(v)
+                versiosig[v] = M["signaalit"].Signaalit(M["uutiset"].lataa_arkisto(), paneeli.paatos.index, seuratut)
             osasig = versiosig[v]
         else:
             osasig = sig
@@ -203,6 +203,16 @@ def main():
                 print(f"  {n} aiempaa uutista tulkittu uudelleen")
         uutismoduuli.tallenna(uudet)
         print(f"  {len(uudet)} uutta uutista/viestiä")
+        if not a.testidata:
+            # Pörssitiedotteet (Nasdaq) ja Trump: oma arkisto, jota vain uudet versiot (v3→) lukevat
+            from botti import lisalahteet
+            try:
+                lisat, lisatila = lisalahteet.keraa(cfg, uutismoduuli.lataa_nimet(cfg["tickerit"]))
+                lisalahteet.tallenna(lisat)
+                lahdetila.update(lisatila)
+                print(f"  {len(lisat)} uutta pörssitiedotetta / Trumpin päivitystä")
+            except Exception as e:  # noqa: BLE001
+                lahdetila["lisalahteet"] = {"ok": 0, "virheet": 1, "viimeisin_virhe": f"{type(e).__name__}: {e}"[:150]}
     sig = Signaalit(uutismoduuli.lataa_arkisto(), paneeli.paatos.index, paneeli.tickerit)
 
     aamuhuomiot = aamutarkistus(tila, sig, viimeisin, cfg, paneeli) if a.aamu else []

@@ -582,8 +582,9 @@ def tallenna(uutiset: list[Uutinen]) -> None:
 
 
 def lataa_arkisto(kk: int = 6) -> list[Uutinen]:
+    """v3: uutisarkisto + lisälähteet (Nasdaqin pörssitiedotteet, Trump)."""
     out = []
-    for f in sorted(ARKISTO.glob("*.jsonl"))[-kk:]:
+    for f in sorted(ARKISTO.glob("*.jsonl"))[-kk:] + sorted(Path("arkisto/lisalahteet").glob("*.jsonl"))[-kk:]:
         for rivi in f.read_text(encoding="utf-8").splitlines():
             try:
                 out.append(Uutinen(**json.loads(rivi)))

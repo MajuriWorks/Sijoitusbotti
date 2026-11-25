@@ -206,6 +206,19 @@ class Moottori:
         uudet = uudet[:mahtuu]
         osuus = raha / len(uudet)
         lik = self._likviditeetti_nyt(paiva)
+        # v3: jos kulut estävät kaksi pientä kauppaa, mutta paras ehdokas kannattaa koko rahalla
+        # (minimikulu puolittuu suhteessa), keskitetään raha siihen
+        # (vain Lyhyt: Pitkä pysyy hajautettuna, historiatestissä keskittäminen lisäsi sen kauppoja 26 -> 111)
+        if len(uudet) > 1 and type(strategia).__name__ == "Lyhyt" and getattr(strategia, "sig", None) is not None:
+            def kannattaa(t, summa):
+                o = strategia.odotettu(t, paiva)
+                ero = self.valittaja.hintaero(lik.get(t) if lik is not None else None)
+                return o is not None and o >= (2 * self.kulut.kulu(t, summa) / summa + 2 * ero
+                                               + self.riskit.get("vaadittu_marginaali", 0.005))
+            if not kannattaa(uudet[0], osuus) and kannattaa(uudet[0], raha):
+                uudet, osuus = uudet[:1], raha
+                huomiot.append(f"{pv}: raha keskitetään yhteen osakkeeseen ({uudet[0]}), koska kahden pienen "
+                               "kaupan kulut olisivat liian suuret")
         arviot = {}
         for t in uudet:
             summa = osuus
