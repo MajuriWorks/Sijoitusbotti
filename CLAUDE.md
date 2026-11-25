@@ -17,6 +17,11 @@ asiantuntija: **vastaa suomeksi, selkokielellä**, tee hyviksi todetut ratkaisut
   versioiden ajaminen). Sitä saa korjata. Jos korjaus muuttaisi bottien päätöksiä, tee se uutena versiona.
 - Omistaja pyysi tätä alusta asti; sen rikkominen on aiemmin sotkenut tulokset.
 
+## Muutosloki ja kaaviot
+- Jokaisesta muutoksesta lyhyt selkokielinen merkintä `MUUTOKSET.md`:hen (uusin ylimpänä, päivämäärä,
+  merkintä [vN]/[infra]/[korjaus] ja lyhyesti miksi). Omistaja silmäilee sen nopeasti.
+- Jos päätöksenteon kulku muuttuu, päivitä kaaviot `TOIMINTA.md`:ssä (Mermaid, näkyy GitHubissa).
+
 ## Rakenne
 - `paivittainen.py` – leikkikauppa (GitHub Actions ma–pe 19:45 ilta, 8:15 aamutarkistus `--aamu`)
 - `historiatesti.py` – historiatesti vain kurssitiedoilla (lauantaisin)

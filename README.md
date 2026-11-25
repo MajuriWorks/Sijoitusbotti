@@ -5,6 +5,8 @@ suurimpia yhtiöitä ja indeksi-ETF:iä. Botti **ei käy kauppaa oikealla rahall
 kaupat oikeilla kursseilla ja kertoo raportissa, mitä se ostaisi ja myisi. Kun tulokset ovat
 vakuuttavia, samat toimeksiannot voi tehdä Nordnetissa käsin.
 
+**Muutokset:** [MUUTOKSET.md](MUUTOKSET.md) · **Miten botti tekee päätökset (kaaviot):** [TOIMINTA.md](TOIMINTA.md)
+
 ## Botit
 
 Kolme bottia, joilla on **sama tietopohja** mutta eri aikajänne:
