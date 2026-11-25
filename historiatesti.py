@@ -8,6 +8,7 @@ mitataan leikkikaupassa.
   python historiatesti.py --vertaa-kulut        # sama eri välittäjien kuluilla
   python historiatesti.py --alku 2026-11-16     # uudelleenajo tietystä päivästä
   python historiatesti.py --testidata           # keksityllä datalla (koodin testaus)
+  python historiatesti.py --versio v3           # lukittu versio (oletus: botti/-kansion koodi)
 """
 from __future__ import annotations
 
@@ -26,7 +27,17 @@ from botti.signaalit import Signaalit
 LAMMITYS_PV = 260  # indikaattorit tarvitsevat noin vuoden historiaa ennen ensimmäistä kauppaa
 
 
-def aja(cfg, paneeli, testialku):
+def aja(cfg, paneeli, testialku, versio=None):
+    """versio=None -> botti/-kansion koodi; esim. "v3" -> lukittu versio versiot/v3."""
+    if versio:
+        from botti.versiot import lataa_versio
+        M = lataa_versio(versio)
+        moottori = M["moottori"].Moottori(cfg)
+        sig = M["signaalit"].Signaalit.tyhja(paneeli.paatos.index, paneeli.tickerit)
+        tulokset, huomiot, _ = M["botit"].aja_botit(cfg, paneeli, sig, moottori, alku=testialku)
+        for t in tulokset:
+            t["nimi"] = f"{t['nimi']} {versio}"
+        return tulokset, huomiot, moottori
     moottori = Moottori(cfg)
     sig = Signaalit.tyhja(paneeli.paatos.index, paneeli.tickerit)
     tulokset, huomiot, _ = aja_botit(cfg, paneeli, sig, moottori, alku=testialku)
@@ -41,6 +52,7 @@ def main():
     ap.add_argument("--alku", help="aloita testi tästä päivästä (YYYY-MM-DD)")
     ap.add_argument("--julkaise", action="store_true", help="kirjoita raportti myös docs/-kansioon (pilviajo)")
     ap.add_argument("--config", default="config.yaml")
+    ap.add_argument("--versio", help="aja lukittu versio, esim. v3 (oletus: botti/-kansion koodi)")
     a = ap.parse_args()
 
     cfg = lataa_asetukset(a.config, a.kuluprofiili)
@@ -58,13 +70,13 @@ def main():
         print("Loppuarvo / kulut yhteensä eri välittäjillä:")
         for prof in cfg["kuluprofiilit"]:
             c = lataa_asetukset(a.config, prof)
-            tulokset, _, _ = aja(c, paneeli, testialku)
+            tulokset, _, _ = aja(c, paneeli, testialku, a.versio)
             osat = [f"{t['nimi']}: {tunnusluvut(t['sarja'], c['alkupaaoma'], t['salkku'])['Loppuarvo']} "
                     f"(kulut {t['salkku'].kulut_yht:.0f} €)" for t in tulokset]
             print(f"  {prof:<24} " + " | ".join(osat))
         print()
 
-    tulokset, huomiot, moottori = aja(cfg, paneeli, testialku)
+    tulokset, huomiot, moottori = aja(cfg, paneeli, testialku, a.versio)
     vertailu = markkinasarja(paneeli, testialku, cfg["alkupaaoma"])
     print(f"Kuluprofiili: {cfg['kuluprofiili']}")
     for t in tulokset + [{"nimi": "Helsinki", "sarja": vertailu, "salkku": None}]:

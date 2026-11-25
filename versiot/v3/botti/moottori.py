@@ -166,6 +166,18 @@ class Moottori:
 
         pidetaan = omistukset & ehd.pidettavat
         odottavat_ostot = {o.ticker: o.summa for o in salkku.odottavat if o.suunta == "OSTA"}
+        # v3: vaihtolaskelma – salkku täynnä, mutta ehdokas on selvästi parempi kuin heikoin omistus
+        if n - len(pidetaan) - len(odottavat_ostot) <= 0:
+            vaihto = self._vaihtolaskelma(salkku, strategia, paiva, paatos, ehd, pidetaan,
+                                          omistukset | myytavana | set(odottavat_ostot))
+            if vaihto:
+                x, syy = vaihto
+                pidetaan.discard(x)
+                myydaan.add(x)
+                salkku.odottavat.append(Toimeksianto(x, "MYY", kpl=salkku.positiot[x].kpl, annettu=pv, syy=syy))
+                huomiot.append(f"{pv}: {syy}")
+                if self.paatosloki is not None:
+                    self.paatosloki[-1]["myydaan"][x] = syy
         vapaat = n - len(pidetaan) - len(odottavat_ostot)
         if vapaat <= 0:
             return huomiot
@@ -179,8 +191,8 @@ class Moottori:
         varaus = (self.riskit["kateisvara_prosentti"] / 100) * salkku.arvo(paatos)
         raha -= varaus + sum(odottavat_ostot.values())
 
-        uudet = [t for t in ehd.ostettavat
-                 if t not in pidetaan and t not in myytavana and t not in odottavat_ostot][:vapaat]
+        uudet = [t for t in ehd.ostettavat     # v3: juuri myytävää ei osteta samalla takaisin
+                 if t not in pidetaan and t not in myytavana and t not in myydaan and t not in odottavat_ostot][:vapaat]
         if not uudet:
             return huomiot
         max_kulu = self.riskit["max_kulu_prosentti"]
@@ -235,6 +247,46 @@ class Moottori:
         if self.paatosloki is not None and arviot:
             self.paatosloki[-1]["tarkastus"] = arviot
         return huomiot
+
+    # v3: vaihtolaskelma
+    VAIHDON_LISAMARGINAALI = 0.01
+
+    def _vaihtolaskelma(self, salkku, strategia, paiva, paatos, ehd, pidetaan, varatut):
+        """Myydäänkö heikoin omistus X, jotta voidaan ostaa selvästi parempi Y?
+        Ostohinta ja mahdollinen tappio eivät vaikuta (mennyttä ei saa takaisin), vain tuleva:
+        Y:n odotettu tuotto - X:n odotettu tuotto > vaihdon kulut (X:n myynti + Y:n osto + hintaerot)
+        + marginaali. Palauttaa (X, perustelu) tai None."""
+        if not hasattr(strategia, "odotettu") or getattr(strategia, "sig", None) is None or not pidetaan:
+            return None
+        odot = {t: strategia.odotettu(t, paiva) for t in pidetaan}
+        odot = {t: v for t, v in odot.items() if v is not None and not pd.isna(paatos.get(t))}
+        if not odot:
+            return None
+        x = min(odot, key=odot.get)
+        ehdokkaat = [t for t in ehd.ostettavat if t not in varatut][:3]
+        lik = self._likviditeetti_nyt(paiva)
+        marginaali = self.riskit.get("vaadittu_marginaali", 0.005) + self.VAIHDON_LISAMARGINAALI
+        summa = salkku.positiot[x].kpl * float(paatos[x])
+        if summa <= 0:
+            return None
+        for y in ehdokkaat:
+            ey = strategia.odotettu(y, paiva)
+            if ey is None:
+                continue
+            ero_x = self.valittaja.hintaero(lik.get(x) if lik is not None else None)
+            ero_y = self.valittaja.hintaero(lik.get(y) if lik is not None else None)
+            vaihtokulu = (self.kulut.kulu(x, summa) + self.kulut.kulu(y, summa)) / summa + ero_x + ero_y
+            # Y:n pitää kelvata myös tavallisena ostona (osto + myynti myöhemmin)
+            y_kulut = 2 * self.kulut.kulu(y, summa) / summa + 2 * ero_y
+            if ey - odot[x] < vaihtokulu + marginaali or ey < y_kulut + marginaali:
+                continue
+            tuomio, syyt, _ = tarkastaja.arvioi(strategia, y, paiva, lik.get(y) if lik is not None else None)
+            if tuomio == "ohita" or (tuomio == "pienennä" and ey - odot[x] < vaihtokulu + marginaali + 0.02):
+                continue
+            tulos = salkku.positiot[x].hankintahinta
+            return x, (f"Vaihto parempaan: {y} odotettu {ey:+.1%} vs. {x} {odot[x]:+.1%}, vaihto maksaa "
+                       f"{vaihtokulu:.1%} (kurssi {float(paatos[x]) / tulos - 1:+.1%} ostohinnasta – ei vaikuta päätökseen)")
+        return None
 
     # ------------------------------------------------------------------ jakso
     def aja(self, salkku: Salkku, strategia: Strategia, paneeli: Paneeli,
