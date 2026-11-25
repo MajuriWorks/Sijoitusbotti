@@ -233,7 +233,10 @@ uutiset:
     inderes_foorumi: true    # mistä yhtiöistä keskustellaan
     reddit: false            # Reddit estää GitHubin palvelimet (403) -> pois päältä
     nasdaq: true             # v3->: pörssitiedotteet suoraan Nasdaqilta (Helsinki, Tukholma, Kööpenhamina), koko teksti
-    trump: true              # v3->: Trumpin Truth Social -päivitykset (trumpstruth.org); vain arkistoon, ei päätöksiin
+    trump: false             # Trumpin päivitykset: pois päältä. Analyysi 11/2026 (14 527 päivitystä): yhtiömaininnat
+                             # liikuttavat kurssia tavallista enemmän, mutta suunta ei ennustettavissa (~50 %) ja liike
+                             # tapahtuu minuuteissa -> ei hyötyä iltabotille. Koodi jää (lisalahteet.py) mahdollista
+                             # päivänsisäistä versiota varten.
   maailma_haut:
     - pörssi
     - osakemarkkinat
