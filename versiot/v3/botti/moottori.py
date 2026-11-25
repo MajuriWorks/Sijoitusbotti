@@ -65,7 +65,10 @@ class Moottori:
             for t, p in salkku.positiot.items():
                 if t in myytavana:
                     continue
-                u = sig.hatauutinen(t, paiva)
+                # v3: kurssin 2 päivän muutos vahvistaa (tai kumoaa) uutisen vakavuuden
+                i = paneeli.paatos.index.get_loc(paiva)
+                muutos = (paatos.get(t) / paneeli.paatos[t].iloc[i - 2] - 1) if i >= 2 and t in paneeli.paatos else None
+                u = sig.hatauutinen(t, paiva, kurssimuutos=muutos)
                 if u is not None:
                     salkku.odottavat.append(Toimeksianto(
                         t, "MYY", kpl=p.kpl, annettu=str(paiva.date()),

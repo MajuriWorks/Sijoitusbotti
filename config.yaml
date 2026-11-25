@@ -212,7 +212,7 @@ versiot:
     muutos: "v1 + teemat: maailman tapahtumat nostavat hyötyviä ja laskevat kärsiviä toimialoja"
   v3:
     lukittu: "2026-11-25"
-    muutos: "v2 + 'pienennä' ei puolita kauppaa vaan vaatii +2 % lisätuoton, kriisitaso vakavien uutisten osuutena, aikaraja vain liikkumattomille"
+    muutos: "v2 + 'pienennä' ei puolita kauppaa vaan vaatii +2 % lisätuoton, kriisitaso vakavien uutisten osuutena, aikaraja vain liikkumattomille, hätämyynti vain kurssin vahvistamana (-3 % / 2 pv) eikä rauhoittavista tai jatkouutisista"
 
 # ---------------- Uutiset, foorumit ja maailma ----------------
 uutiset:
@@ -284,7 +284,6 @@ uutiset:
     - https://www.cnbc.com/id/100003114/device/rss/rss.html
     - https://www.theguardian.com/business/rss
     - https://www.hs.fi/rss/talous.xml
-    - https://www.hs.fi/rss/ulkomaat.xml
     - https://feeds.kauppalehti.fi/rss/main
     - https://yle.fi/rss/uutiset/tuoreimmat
   reddit:

@@ -14,7 +14,19 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pandas as pd
 
-from .uutiset import Uutinen
+import re
+
+from .uutiset import VAKAVA, Uutinen
+
+# v3: otsikko, joka kertoo kriisin päättyneen tai jääneen vaikutuksettomaksi, ei ole hätäuutinen
+# (esim. "Equinor says cyberattack has stopped; production unaffected" laukaisi v1:ssä hätämyynnin)
+RAUHOITTAVA = re.compile(
+    r"\b(unaffected|not affected|no (material |financial )?(impact|effect)|without impact|has (been )?stopped|"
+    r"(was|were|been|is) stopped|stopped after|ended|is over|resolved|restored|contained|under control|"
+    r"back to normal|resum\w+|lifted|dropped (charges|probe|lawsuit)|charges dropped|cleared|acquitted|"
+    r"dismiss\w+|settle[sd]?|rejects? (claims?|allegations?)|denies|false alarm|"
+    r"ei vaikut\w*|ei vaikuta|päättyi|päättynyt|ohi\b|saatu hallintaan|palautettu|palautui|jatkuu normaalisti|"
+    r"hylät\w*|vapautet\w*)\b", re.I)
 
 HKI = ZoneInfo("Europe/Helsinki")
 YHTIO_TYYPIT = ("tiedote", "uutinen", "analyytikko", "sisapiiri")
@@ -95,21 +107,34 @@ class Signaalit:
         vakava_maailma = pd.Series(0.0, index=paivat)
         vakava = nolla()
         self.vakavat_otsikot: dict[tuple, Uutinen] = {}
+        # v3: yhtiöuutisten vakavuus arvioidaan samalla säännöllä kaikille uutisille (arkiston merkintä
+        # riippui siitä, millä koodilla uutinen kerättiin) ja rauhoittavat otsikot jätetään pois.
+        # Maailmanuutiset (kriisitaso) lasketaan kuten ennen.
+        vakava_yhtio = pd.DataFrame(False, index=paivat, columns=list(tickerit))
         for u in uutiset:
-            if not u.lisatieto.get("vakava"):
+            merkitty = bool(u.lisatieto.get("vakava"))
+            yhtio_vakava = (merkitty or (u.tunnelma < -0.2 and bool(VAKAVA.search(u.otsikko)))) \
+                and not RAUHOITTAVA.search(u.otsikko)
+            if not merkitty and not yhtio_vakava:
                 continue
             i = self._paiva_indeksi(u.aika)
             if i is None:
                 continue
-            if _onko_maailma(u):
+            if merkitty and _onko_maailma(u):
                 vakava_maailma.iloc[i] += 1
+            if not yhtio_vakava:
+                continue
             for t in u.tickerit:
                 if t in vakava.columns:
-                    vakava.iat[i, vakava.columns.get_loc(t)] += u.tunnelma * u.paino
+                    vakava_yhtio.iat[i, vakava_yhtio.columns.get_loc(t)] = True
+                    vakava.iat[i, vakava.columns.get_loc(t)] += u.tunnelma * max(u.paino, 0.9)
                     vanha = self.vakavat_otsikot.get((t, i))
                     if vanha is None or u.tunnelma < vanha.tunnelma:
                         self.vakavat_otsikot[(t, i)] = u
         self.vakava = _hiipuva(vakava, 1)
+        # v3: jatkouutisointi = samasta yhtiöstä vakavia uutisia jo 2–5 kauppapäivää aiemmin
+        aiemmat = vakava_yhtio.astype(int).shift(2).rolling(4, min_periods=1).sum().fillna(0)
+        self.jatkouutinen = aiemmat > 0
         # Kriisitaso = vakavien maailmanuutisten määrä suhteessa tavalliseen (1 = normaali päivä)
         # Vertailutaso lasketaan vain päiviltä, joilta uutisia on kerätty, ja vasta kun niitä on
         # vähintään 10 (muuten uusien lähteiden lisääminen näyttäisi kriisiltä).
@@ -163,9 +188,24 @@ class Signaalit:
         """Poikkeuksellisen paljon vakavia maailmanuutisia (sodat, katastrofit, romahdukset)."""
         return bool(self.kriisitaso.loc[paiva] >= 2.0 and self.vakavat_maailma.loc[paiva] >= 8)
 
-    def hatauutinen(self, ticker: str, paiva) -> Uutinen | None:
-        """Vakava kielteinen uutinen yhtiöstä viimeisen päivän aikana -> myydään heti."""
-        if ticker not in self.vakava.columns or self.vakava.at[paiva, ticker] > -0.4:
+    # v3: hätämyynti vaatii, että kurssi vahvistaa uutisen (vähintään -3 % kahdessa päivässä).
+    # Otsikoiden määrä ei kerro vakavuudesta (jättiyhtiöstä kirjoitetaan kymmeniä juttuja), markkina kertoo.
+    # Aamulla ennen avausta kurssireaktiota ei vielä ole -> aamutarkistus vain peruu ostoja.
+    HATA_RAJA = -0.4
+    HATA_KURSSIRAJA = -0.03
+
+    def hatauutinen(self, ticker: str, paiva, kurssimuutos: float | None = None) -> Uutinen | None:
+        """Vakava kielteinen uutinen yhtiöstä viimeisen päivän aikana -> myydään heti.
+        kurssimuutos = osakkeen 2 päivän kurssimuutos (None = ei tiedossa, esim. aamulla ennen avausta)."""
+        if ticker not in self.vakava.columns:
+            return None
+        taso = self.vakava.at[paiva, ticker]
+        if taso > self.HATA_RAJA:
+            return None
+        if bool(self.jatkouutinen.at[paiva, ticker]):
+            return None          # sama tapahtuma jatkuu: hätämyynnin hetki oli jo, stop-loss suojaa edelleen
+        vahvistettu = kurssimuutos is not None and not pd.isna(kurssimuutos) and kurssimuutos <= self.HATA_KURSSIRAJA
+        if not vahvistettu:
             return None
         i = int(self.paivat.searchsorted(paiva))
         return self.vakavat_otsikot.get((ticker, i)) or self.vakavat_otsikot.get((ticker, i - 1))
@@ -173,7 +213,9 @@ class Signaalit:
     def kielteinen_uutinen(self, ticker: str, paiva) -> bool:
         if ticker not in self.uutis_lyhyt.columns:
             return False
-        return bool(self.uutis_lyhyt.at[paiva, ticker] < -0.2) or self.hatauutinen(ticker, paiva) is not None
+        # v3: ostoa perutaan jo pelkästä vakavasta uutisesta (ei vaadita kurssireaktiota)
+        return bool(self.uutis_lyhyt.at[paiva, ticker] < -0.2) or bool(
+            ticker in self.vakava.columns and self.vakava.at[paiva, ticker] <= self.HATA_RAJA)
 
     def tuorein_otsikko(self, ticker: str, paiva: pd.Timestamp, pv: int = 5) -> Uutinen | None:
         """Painavin uutinen viimeisten päivien ajalta (perusteluihin)."""

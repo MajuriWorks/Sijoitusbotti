@@ -25,7 +25,9 @@ asiantuntija: **vastaa suomeksi, selkokielellä**, tee hyviksi todetut ratkaisut
 
 ## Testaus
 - Keksityllä datalla (ei verkkoa): kopioi tiedostot väliaikaiskansioon ja aja siellä, jottei
-  oikea `tila/` tai `arkisto/` sotkeudu:
+  oikea `tila/` tai `arkisto/` sotkeudu. Poista kopiosta oikea tila, muuten oikeat omistukset
+  arvostetaan keksityillä kursseilla (järjettömiä arvoja, raportin kaavio voi kaatua):
+  `rm -rf tila arkisto/paatokset.jsonl arkisto/uutiset arkisto/kurssit docs`
   `python paivittainen.py --testidata --testi-asti 2026-09-01 && python paivittainen.py --testidata`
 - Oikealla datalla (vaatii verkon): `python historiatesti.py --vertaa-kulut`
 - Älä koskaan aja testejä repon juuressa ilman `git checkout -- tila arkisto docs` -palautusta.

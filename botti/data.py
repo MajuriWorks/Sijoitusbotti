@@ -87,6 +87,16 @@ def _siisti(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _poista_rikkinainen_alku(df: pd.DataFrame) -> pd.DataFrame:
+    """Yahoon osinkokorjaus rikkoo joskus vanhan historian (esim. SSAB A: negatiivisia kursseja
+    2016–2022 ja +800 % "nousu" yhdessä päivässä). Rikkinäinen alkuosa jätetään pois."""
+    df = df[df["Close"] > 0]
+    hyppy = df["Close"].pct_change() > 3.0          # yli +300 % yhdessä päivässä = datavirhe
+    if hyppy.any():
+        df = df.loc[hyppy[hyppy].index[-1]:]
+    return df
+
+
 def _lataa_yahoo(tickerit: list[str], alku: str, cache_dir: Path) -> dict[str, pd.DataFrame]:
     """Hakee usean tunnuksen datan. Käyttää välimuistia, hakee puuttuvat erissä."""
     cache_dir.mkdir(parents=True, exist_ok=True)
@@ -142,6 +152,8 @@ def lataa_paneeli(tickerit: list[str], alku: str, cache_dir: str | Path = "data"
     avaus, paatos, vaihto, puuttuvat, matala = {}, {}, {}, [], {}
     for t in tickerit:
         df = data.get(t)
+        if df is not None and not df.empty:
+            df = _poista_rikkinainen_alku(df)
         if df is None or df.empty:
             puuttuvat.append(t)
             continue
