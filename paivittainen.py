@@ -82,7 +82,13 @@ def uutisjarjestys(cfg: dict, paneeli, tila: dict) -> list[str]:
     return jarjestys
 
 
-def aamutarkistus(tila: dict, sig: Signaalit, paiva) -> list[str]:
+def _osan_versio(cfg: dict, osa: str) -> str:
+    """Salkun avain ("pitka", "yhdistelma_lyhyt", "lyhyt@lyhyt_v3") -> botin versio config.yaml:sta."""
+    nimi = osa.split("@", 1)[1] if "@" in osa else osa.split("_")[0]
+    return (cfg["botit"].get(nimi) or {}).get("versio", "v1")
+
+
+def aamutarkistus(tila: dict, sig: Signaalit, paiva, cfg: dict | None = None, paneeli=None) -> list[str]:
     """Yön aikana (USA, Aasia) tulleet vakavat uutiset ennen pörssin avautumista:
     - omistetusta yhtiöstä vakava kielteinen uutinen -> myydään avauksessa
     - kriisihälytys (paljon vakavia maailmanuutisia) -> perutaan odottavat ostot"""
@@ -90,18 +96,31 @@ def aamutarkistus(tila: dict, sig: Signaalit, paiva) -> list[str]:
     klo = _dt.now(ZoneInfo("Europe/Helsinki")).strftime("%H:%M")
     huomiot = []
     kriisi = sig.kriisissa(paiva)
+    # Jokainen botti käyttää oman (lukitun) versionsa hätäsääntöjä
+    versiosig = {}
+    uutislista = uutismoduuli.lataa_arkisto()
+    seuratut = sorted({t for d in tila.get("botit", {}).values()
+                       for t in list(d.get("positiot", {})) + [o["ticker"] for o in d.get("odottavat", [])]})
     for osa, d in tila.get("botit", {}).items():
         if osa == "indeksi":
             continue
+        if cfg is not None and paneeli is not None:
+            v = _osan_versio(cfg, osa)
+            if v not in versiosig:
+                from botti.versiot import lataa_versio
+                versiosig[v] = lataa_versio(v)["signaalit"].Signaalit(uutislista, paneeli.paatos.index, seuratut)
+            osasig = versiosig[v]
+        else:
+            osasig = sig
         s = Salkku.from_dict(d)
         myytavana = {o.ticker for o in s.odottavat if o.suunta == "MYY"}
         for t, p in s.positiot.items():
-            u = sig.hatauutinen(t, paiva)
+            u = osasig.hatauutinen(t, paiva)
             if u is not None and t not in myytavana:
                 s.odottavat.append(Toimeksianto(t, "MYY", kpl=p.kpl, annettu=str(paiva.date()),
                                                 syy=f"AAMUTARKISTUS: vakava uutinen yöllä: {u.otsikko[:100]}"))
                 huomiot.append(f"Aamutarkistus {klo} [{osa}]: myydään {t} – {u.otsikko[:80]}")
-        perutut = [o.ticker for o in s.odottavat if o.suunta == "OSTA" and sig.kielteinen_uutinen(o.ticker, paiva)]
+        perutut = [o.ticker for o in s.odottavat if o.suunta == "OSTA" and osasig.kielteinen_uutinen(o.ticker, paiva)]
         if perutut:
             s.odottavat = [o for o in s.odottavat if not (o.suunta == "OSTA" and o.ticker in perutut)]
             huomiot.append(f"Aamutarkistus {klo} [{osa}]: perutaan osto {', '.join(perutut)} – kielteinen uutinen yöllä")
@@ -186,7 +205,7 @@ def main():
         print(f"  {len(uudet)} uutta uutista/viestiä")
     sig = Signaalit(uutismoduuli.lataa_arkisto(), paneeli.paatos.index, paneeli.tickerit)
 
-    aamuhuomiot = aamutarkistus(tila, sig, viimeisin) if a.aamu else []
+    aamuhuomiot = aamutarkistus(tila, sig, viimeisin, cfg, paneeli) if a.aamu else []
 
     moottori = Moottori(cfg)          # raportin kulumallia varten
     if a.aamu:   # aamulla ei käsitellä uusia kauppapäiviä, vain muutetaan odottavia toimeksiantoja
