@@ -175,6 +175,25 @@ botit:
     pohja: yhdistelma
     nimi: Yhdistelmä teema
     aloita: alusta
+  # v3 (25.11.2026): v2 + korjaukset; ajetaan leikkikaupan alusta tallennetuilla tiedoilla
+  lyhyt_v3:
+    kaytossa: true
+    versio: v3
+    pohja: lyhyt
+    nimi: Lyhyt
+    aloita: alusta
+  pitka_v3:
+    kaytossa: true
+    versio: v3
+    pohja: pitka
+    nimi: Pitkä
+    aloita: alusta
+  yhdistelma_v3:
+    kaytossa: true
+    versio: v3
+    pohja: yhdistelma
+    nimi: Yhdistelmä
+    aloita: alusta
   # Uusi versio lisätään RINNALLE näin (vanha jatkaa ennallaan):
   # lyhyt_v2:
   #   kaytossa: true
@@ -191,6 +210,9 @@ versiot:
   v2:
     lukittu: "2026-11-20"
     muutos: "v1 + teemat: maailman tapahtumat nostavat hyötyviä ja laskevat kärsiviä toimialoja"
+  v3:
+    lukittu: "2026-11-25"
+    muutos: "v2 + 'pienennä' ei puolita kauppaa vaan vaatii +2 % lisätuoton, kriisitaso vakavien uutisten osuutena, aikaraja vain liikkumattomille"
 
 # ---------------- Uutiset, foorumit ja maailma ----------------
 uutiset:

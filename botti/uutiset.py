@@ -523,7 +523,24 @@ def vakavuus(u: Uutinen) -> None:
         u.paino = max(u.paino, 0.9)
 
 
+HINTA_YLOS = re.compile(r"\b(soar\w*|skyrocket\w*|surg\w*|jump\w*|rall(y|ies|ied)|rocket\w*|spike\w*|"
+                        r"nousi|nousee|ponkais\w*|rakett\w*|kipus\w*)\b[^.]{0,30}?\d+\s?%", re.I)
+HINTA_ALAS = re.compile(r"\b(plung\w*|plummet\w*|tumbl\w*|crash\w*|sink\w*|sank|slump\w*|tank\w*|"
+                        r"romah\w*|syöks\w*|putos\w*|laski)\b[^.]{0,30}?\d+\s?%", re.I)
+
+
+def hintaliikekorjaus(u: Uutinen) -> None:
+    """Otsikko, joka kertoo suoraan kurssin noususta tai laskusta prosentteina, on yksiselitteinen.
+    Ilmainen malli lukee niitä joskus väärin (esim. 'Stock skyrockets 33%' -> kielteinen)."""
+    ylos, alas = HINTA_YLOS.search(u.otsikko), HINTA_ALAS.search(u.otsikko)
+    if ylos and not alas and u.tunnelma < 0.5:
+        u.tunnelma, u.lisatieto["korjattu"] = 0.6, "hintaliike ylös"
+    elif alas and not ylos and u.tunnelma > -0.5:
+        u.tunnelma, u.lisatieto["korjattu"] = -0.6, "hintaliike alas"
+
+
 def laatupainotus(u: Uutinen) -> None:
+    hintaliikekorjaus(u)
     julkaisija = u.lisatieto.get("julkaisija", "")
     kerroin = 1.0
     if LAADUKKAAT.search(julkaisija) or u.tyyppi == "tiedote":
