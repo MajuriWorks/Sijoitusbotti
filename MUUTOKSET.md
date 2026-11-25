@@ -5,6 +5,9 @@ vanhojen versioiden päätöksiä), **[korjaus]** = virheen korjaus.
 
 ---
 
+## 25.11.2026 (ilta) – Trumpin päivitysten keruu pois
+- [infra] Trumpin Truth Social -päivityksiä ei kerätä. *Syy: analyysi 14 527 päivityksestä aiheittain (tullit, Kiina, lääkkeet, NATO, öljy, yhtiömaininnat). Yhtiömaininnat (Apple, Nvidia, Tesla) liikuttivat kurssia noin 1,7-kertaisesti tavalliseen verrattuna, mutta suunnan jatkuminen oli kolikonheittoa (noin 50 %), ja liike tapahtuu minuuteissa. Iltabotti ei hyödy tästä.* Koodi jää talteen pois päältä.
+
 ## 25.11.2026 – v3 valmis, ajetaan ensimmäisen kerran tänä iltana
 v3-botit (Lyhyt, Pitkä, Yhdistelmä) ajetaan leikkikaupan alusta (13.11.) asti, jolloin niitä voi verrata v1:een ja v2:een.
 
@@ -20,13 +23,12 @@ v3-botit (Lyhyt, Pitkä, Yhdistelmä) ajetaan leikkikaupan alusta (13.11.) asti,
 - Artikkelin tekstistä luettu sävy korvaa otsikon sävyn (klikkiotsikot).
 - Väärät yhtiöosumat pois: monitulkintaiset nimet (Elisa, Alexandria, Kone, Tieto, Target…) vaativat otsikkoon talousaiheisen sanan.
 - Pörssitiedotteet suoraan Nasdaqilta: rutiinitiedotteet jätetään pois, johdon kaupat ja liputukset otetaan mukaan vain, kun suunta on luettu tekstistä, ja osakeanti tulkitaan kielteiseksi.
-- Trumpin päivitykset eivät vaikuta päätöksiin. *Analyysi 14 527 päivityksestä: ei mitattavaa etua.*
 
 **Infra**
 - [korjaus] Artikkelien luku: Google-linkit hylättiin virheen takia, joten vain noin 5 artikkelia 150:stä luettiin.
 - [korjaus] Yahoon rikkinäinen kurssihistoria (SSAB A: negatiivisia kursseja) jätetään pois.
 - [korjaus] HS:n lakannut uutissyöte poistettu.
-- Uudet lähteet: Nasdaqin pörssitiedotteet (Helsinki, Tukholma, Kööpenhamina) ja Trumpin Truth Social -päivitykset (`arkisto/lisalahteet/`, vain v3 lukee).
+- Uusi lähde: Nasdaqin pörssitiedotteet (Helsinki, Tukholma, Kööpenhamina) omaan arkistoonsa (`arkisto/lisalahteet/`, vain v3 lukee).
 - Aamutarkistus käyttää kunkin botin oman version sääntöjä.
 - Historiatesti osaa ajaa lukitun version: `python historiatesti.py --versio v3`.
 

@@ -12,7 +12,7 @@ Ajastetut ajot alkavat usein 30–60 minuuttia myöhässä.
 flowchart TD
     A[Ilta-ajo arkisin ~19.45] --> B[Kurssit Yahoosta<br/>päätöskurssi ja vaihto]
     A --> C[Uutiset: Google News, Yahoo,<br/>suuret mediat, RSS, Inderes]
-    A --> D[v3: pörssitiedotteet Nasdaqilta<br/>+ Trump arkistoon]
+    A --> D[v3: pörssitiedotteet<br/>Nasdaqilta]
     C --> E[Tulkinta: FinBERT-malli<br/>+ avainsanat]
     D --> E
     E --> F[Tärkeimmistä luetaan<br/>artikkelin teksti]
