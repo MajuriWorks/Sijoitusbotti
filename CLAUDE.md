@@ -9,6 +9,10 @@ asiantuntija: **vastaa suomeksi, selkokielellä**, tee hyviksi todetut ratkaisut
   sinne, lisää `config.yaml`:iin uudet botit (`versio: vN`, `pohja: lyhyt|pitka|yhdistelma`, `nimi`,
   `aloita: alusta` jotta ne ajetaan leikkikaupan alusta tallennetuilla tiedoilla) ja kirjaa
   `versiot:`-osioon lukitus­päivä ja muutos. Vanhat botit jatkavat ennallaan.
+- Poikkeus (omistajan päätös 25.11.2026): uusinta versiota saa muuttaa, kunnes se on ajanut leikkikauppaa
+  pilvessä. Jos se ehti jo ajaa, poista sen salkut `tila/salkut.json`:sta (avaimet `…@<botti>_vN`) ja sen rivit
+  `arkisto/paatokset.jsonl`:sta (`"versio": "vN"`), jolloin se ajetaan seuraavalla kerralla uudelleen alusta.
+  Ei tuhansia versioita: pienet parannukset kootaan samaan keskeneräiseen versioon.
 - `botti/`-kansion koodi on yhteistä infraa (datan haku, uutiskeräys ja -tulkinta, raportti,
   versioiden ajaminen). Sitä saa korjata. Jos korjaus muuttaisi bottien päätöksiä, tee se uutena versiona.
 - Omistaja pyysi tätä alusta asti; sen rikkominen on aiemmin sotkenut tulokset.
@@ -29,7 +33,8 @@ asiantuntija: **vastaa suomeksi, selkokielellä**, tee hyviksi todetut ratkaisut
   arvostetaan keksityillä kursseilla (järjettömiä arvoja, raportin kaavio voi kaatua):
   `rm -rf tila arkisto/paatokset.jsonl arkisto/uutiset arkisto/kurssit docs`
   `python paivittainen.py --testidata --testi-asti 2026-09-01 && python paivittainen.py --testidata`
-- Oikealla datalla (vaatii verkon): `python historiatesti.py --vertaa-kulut`
+- Oikealla datalla (vaatii verkon): `python historiatesti.py --vertaa-kulut` (lisäksi `--versio v3` ajaa
+  lukitun version; oletus on `botti/`-kansion koodi). Historiatestissä ei ole uutisia.
 - Älä koskaan aja testejä repon juuressa ilman `git checkout -- tila arkisto docs` -palautusta.
 
 ## Muistettavaa
