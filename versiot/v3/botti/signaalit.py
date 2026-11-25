@@ -16,7 +16,11 @@ import pandas as pd
 
 import re
 
-from .uutiset import VAKAVA, Uutinen
+import dataclasses
+import json
+from pathlib import Path
+
+from .uutiset import VAKAVA, Uutinen, _hakuavaimet
 
 # v3: otsikko, joka kertoo kriisin päättyneen tai jääneen vaikutuksettomaksi, ei ole hätäuutinen
 # (esim. "Equinor says cyberattack has stopped; production unaffected" laukaisi v1:ssä hätämyynnin)
@@ -48,8 +52,112 @@ def _onko_maailma(u: Uutinen) -> bool:
         or u.tyyppi == "maailma"
 
 
+# ---------------------------------------------------------------- v3: uutisten esikäsittely
+# Google-haku yhtiön nimellä tuo myös juttuja, jotka eivät koske yhtiötä ("Elisa Schneider dies",
+# "Alexandria High School", "gusts target north Georgia", "Ylen kone näyttää"). Monitulkintaisen
+# nimen uutiselta vaaditaan taloussana; yksiselitteiset nimet (Nokia, Equinor...) hyväksytään sellaisenaan.
+KONTEKSTI = re.compile(
+    r"\b(oyj|abp|plc|asa|ab|a/s|corp\w*|inc|ltd|group|konserni\w*|yhtiö\w*|company|companies|firm|"
+    r"shares?|stocks?|osake\w*|osakkee\w*|aktie\w*|pörssi\w*|börs\w*|"
+    r"ceo|cfo|toimitusjohtaja\w*|johtaja\w*|board|hallitu\w*|chairman|"
+    r"results?|tulos\w*|tulokse\w*|earnings|revenue|sales|liikevaihto\w*|myynti\w*|profit\w*|voitto\w*|ebit\w*|"
+    r"margin|q[1-4]|quarter\w*|kvartaal\w*|neljännes\w*|osavuosi\w*|interim|half-year|annual|"
+    r"guidance|ohjeistu\w*|outlook|näkym\w*|forecast|ennust\w*|"
+    r"dividend\w*|osinko\w*|buyback|takaisinosto\w*|"
+    r"price target|tavoitehin\w*|suositu\w*|upgrade\w*|downgrade\w*|analyst\w*|analyytik\w*|rating|bullish|bearish|"
+    r"acqui\w*|merger|yrityskau\w*|ostotarjou\w*|tender offer|takeover|divest\w*|"
+    r"orders?|tilau\w*|contract\w*|sopimu\w*|deal|agreement|investoi\w*|plant|tehda\w*|factory|"
+    r"layoffs?|job cuts|yt-\w*|muutosneuvottel\w*|irtisano\w*|lomaut\w*|"
+    r"launch\w*|lanseera\w*|patent\w*|fda|"
+    r"customers?|asiakka\w*|market share|markkinaosuu\w*|telecom|operaattori\w*|"
+    r"lawsuit|fine[sd]?|sakko\w*|probe|investigation|cyber\w*|kyber\w*|"
+    r"bonds?|joukkovelka\w*|rahoitu\w*|financing|ipo|listau\w*|"
+    r"nasdaq|nyse|omx\w*)\b", re.I)
+# Henkilö- ja paikannimet, joita "pienellä kirjaimella" -testi ei tunnista
+MONITULKINTAISET = {"ELISA.HE", "ALEX.HE", "ILKKA.HE", "INVE-B.ST", "VIK1V.HE", "SAMPO.HE", "ORNBV.HE",
+                    "PNDORA.CO", "ROL", "CMI", "ALB", "IT", "NOW", "LOW", "COST", "NWSA"}
+VARMAT_LAHTEET = ("yahoo", "nasdaq", "sisapiiri", "analyytikot")
+# Pörssitiedotteet: rutiinit eivät ole uutisia (päivittäiset omien osakkeiden ostot ym.)
+RUTIINILUOKAT = {"changes in company's own shares", "financial calendar", "total number of voting rights and capital",
+                 "notice to general meeting", "decisions of general meeting", "prospectus/announcement of prospectus",
+                 "articles of association", "annual distribution of information"}
+RUTIINI = re.compile(r"buy-?back.{0,40}transactions|transactions? in own shares|repurchase of own shares|"
+                     r"omien osakkeiden (hankin|osto|luovutu)|financial calendar|taloudellinen kalenteri|"
+                     r"final terms|base prospectus|lopulliset ehdot|notice to the (annual|extraordinary) general", re.I)
+OSAKEANTI = re.compile(r"rights issue|share issue|directed issue|osakeanti|osakeannin|merkintäetuoikeu", re.I)
+
+
+def _nimet() -> dict:
+    try:
+        return json.loads(Path("arkisto/nimet.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def monitulkintaiset_nimet(uutiset: list[Uutinen], nimet: dict) -> set[str]:
+    """Yhtiöt, joiden nimi esiintyy otsikoissa usein tavallisena sanana (pienellä alkukirjaimella):
+    Tieto ("tieto"), Kone ("kone"), Target ("target"), Titanium, Frontline, Evolution..."""
+    n, pieni = {}, {}
+    for u in uutiset:
+        if u.lahde != "google_yhtiot":
+            continue
+        for t in u.tickerit:
+            for a in _hakuavaimet(t, nimet.get(t, t)):
+                a = a.strip()
+                if len(a) < 3:
+                    continue
+                m = re.search(r"(?<![\w])" + re.escape(a), u.otsikko, re.I)
+                if m:
+                    n[t] = n.get(t, 0) + 1
+                    if m.group(0)[0].islower() and m.start() > 0:
+                        pieni[t] = pieni.get(t, 0) + 1
+                    break
+    return MONITULKINTAISET | {t for t, k in n.items() if k >= 8 and pieni.get(t, 0) / k > 0.12}
+
+
+def esikasittele(uutiset: list[Uutinen], nimet: dict | None = None) -> list[Uutinen]:
+    """v3: (1) artikkelin tekstistä luettu tunnelma korvaa otsikon tunnelman, kun se on saatavilla,
+    (2) monitulkintaisen nimen osuma hylätään, jos otsikko ei koske liiketoimintaa."""
+    nimet = _nimet() if nimet is None else nimet
+    monit = monitulkintaiset_nimet(uutiset, nimet)
+    # Pörssitiedote suoraan Nasdaqilta korvaa saman päivän Google-kopion (ei tuplapainoa)
+    nasdaq = {(t, u.aika[:10], u.tyyppi) for u in uutiset if u.lahde == "nasdaq" for t in u.tickerit}
+    out = []
+    for u in uutiset:
+        if u.lahde == "trump":
+            continue      # arkistoidaan, mutta ei käytetä: historiassa ei mitattavaa etua (testattu 11/2026)
+        if u.lahde != "nasdaq" and u.tyyppi in ("sisapiiri", "tiedote") and u.tickerit and \
+                all((t, u.aika[:10], u.tyyppi) in nasdaq for t in u.tickerit):
+            continue
+        muutos = {}
+        lt = u.lisatieto or {}
+        if u.lahde == "nasdaq":
+            if (lt.get("luokka") or "").lower() in RUTIINILUOKAT or RUTIINI.search(u.otsikko):
+                continue
+            if u.tyyppi in ("sisapiiri", "liputus") and "teksti_tunnelma_yhd" not in lt:
+                continue  # kaupan suunta (osto/myynti) ei selvinnyt tekstistä
+            if OSAKEANTI.search(u.otsikko):
+                muutos["tunnelma"] = min(u.tunnelma, -0.3)   # laimentaa omistusta
+        if u.tyyppi == "liputus":
+            muutos["tyyppi"] = "tiedote"
+        if "teksti_tunnelma_yhd" in lt and "tunnelma" not in muutos:
+            muutos["tunnelma"] = lt["teksti_tunnelma_yhd"]
+            if lt.get("suunta") == "osto":
+                muutos["paino"] = max(u.paino, 0.7)
+        if u.tickerit and u.lahde not in VARMAT_LAHTEET and u.tyyppi not in ("sisapiiri", "analyytikko", "tiedote"):
+            ok = KONTEKSTI.search(u.otsikko) or lt.get("yhtio_tekstissa", 0) >= 2
+            pidettavat = [t for t in u.tickerit if t not in monit or ok]
+            if len(pidettavat) != len(u.tickerit):
+                muutos["tickerit"] = pidettavat
+                if not pidettavat and u.tyyppi != "maailma":
+                    continue      # ei koske mitään seurattua yhtiötä
+        out.append(dataclasses.replace(u, **muutos) if muutos else u)
+    return out
+
+
 class Signaalit:
     def __init__(self, uutiset: list[Uutinen], paivat: pd.DatetimeIndex, tickerit: list[str]):
+        uutiset = esikasittele(uutiset)      # v3
         self.paivat, self.tickerit = paivat, tickerit
         self.uutiset = uutiset
         nolla = lambda: pd.DataFrame(0.0, index=paivat, columns=tickerit)  # noqa: E731

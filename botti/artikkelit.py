@@ -34,7 +34,8 @@ def ratkaise_osoite(u: Uutinen) -> str | None:
         fn = getattr(g, "gnewsdecoder", None) or getattr(g, "new_decoderv1", None)
         if fn:
             r = fn(url, interval=1)
-            if r and r.get("status") and r.get("decoded_url"):
+            # Uusi versio palauttaa "success", vanha "status" (virhe: kaikki Google-linkit hylättiin)
+            if r and (r.get("status") or r.get("success")) and r.get("decoded_url"):
                 return r["decoded_url"]
     except Exception:  # noqa: BLE001
         pass
@@ -128,23 +129,34 @@ def lue_ja_tulkitse(uutiset: list[Uutinen], nimet: dict[str, str], max_luettavia
             continue
 
         otsikko_tun = u.tunnelma
+        # Tekstin tulos tallennetaan aina lisätietoihin (v3 käyttää niitä). Uutisen pääarvoa
+        # (tunnelma) muutetaan vain niille linkeille, jotka luettiin jo ennen Google-korjausta,
+        # jotta v1- ja v2-bottien tietopohja pysyy ennallaan.
+        vanha_polku = "news.google.com" not in (u.linkki or "")
         if u.tyyppi == "sisapiiri":
-            if INSIDER_OSTO.search(teksti):
-                u.tunnelma, u.paino = 0.7, max(u.paino, 0.7)
-                u.lisatieto["suunta"] = "osto"
-                tila["sisapiiri_suunta"] += 1
-            elif INSIDER_MYYNTI.search(teksti):
-                u.tunnelma, u.paino = -0.3, max(u.paino, 0.5)
-                u.lisatieto["suunta"] = "myynti"
+            suunta = "osto" if INSIDER_OSTO.search(teksti) else "myynti" if INSIDER_MYYNTI.search(teksti) else None
+            if suunta:
+                tun, paino = (0.7, 0.7) if suunta == "osto" else (-0.3, 0.5)
+                u.lisatieto["suunta"] = suunta
+                u.lisatieto["teksti_tunnelma_yhd"] = tun
+                if vanha_polku:
+                    u.tunnelma, u.paino = tun, max(u.paino, paino)
                 tila["sisapiiri_suunta"] += 1
         else:
             avaimet = [a for t in u.tickerit for a in _hakuavaimet(t, nimet.get(t, t))]
-            tt = tekstin_tunnelma(valitse_lauseet(teksti, avaimet))
+            lauseet = valitse_lauseet(teksti, avaimet)
+            tt = tekstin_tunnelma(lauseet)
+            # Mainitaanko yhtiö tekstissä muuallakin kuin ingressissä? (v3: väärien osumien suodatus)
+            u.lisatieto["yhtio_tekstissa"] = sum(1 for l in LAUSE.split(teksti.replace("\n", " "))
+                                                 if any(a.strip() and a.strip() in l.lower() for a in avaimet))
             if tt is not None:
                 # Teksti painaa 70 %, otsikko 30 %. Klikkiotsikko ei enää yksin ratkaise.
-                u.tunnelma = round(max(-1.0, min(1.0, 0.3 * otsikko_tun + 0.7 * tt)), 2)
+                yhd = round(max(-1.0, min(1.0, 0.3 * otsikko_tun + 0.7 * tt)), 2)
                 u.lisatieto["otsikon_tunnelma"] = round(otsikko_tun, 2)
                 u.lisatieto["tekstin_tunnelma"] = round(tt, 2)
+                u.lisatieto["teksti_tunnelma_yhd"] = yhd
+                if vanha_polku:
+                    u.tunnelma = yhd
         u.lisatieto["teksti"] = f"luettu ({len(teksti)} merkkiä)"
         tila["luettu"] += 1
     return tila
