@@ -674,7 +674,49 @@
     "2026-11-26": 400.0
    },
    "viimeisin_paatos": "2026-11-26"
+  },
+  "lyhyt@lyhyt_v4": {
+   "kateinen": 476.2071363007782,
+   "positiot": {
+    "GMAB.CO": {
+     "kpl": 1,
+     "hankintahinta": 523.7928636992218,
+     "ostopaiva": "2026-11-25",
+     "huippu": 513.5128636992218,
+     "odotettu": 0.0718,
+     "viite_kurssi": 0.0
+    }
+   },
+   "odottavat": [],
+   "kaupat": [
+    {
+     "paiva": "2026-11-25",
+     "ticker": "GMAB.CO",
+     "suunta": "OSTA",
+     "kpl": 1,
+     "hinta": 513.5128636992218,
+     "kulu": 10.28,
+     "syy": "pisteet +1.29, 20 pv nousu +27.1% | uutinen (+): Jefferies raises its view on Genmab and sees more chances of success | teema: Korot laskevat (hyötyy), Taantumapelko (hyötyy) | odotettu +7.2% vs. kulut 2.4% | tarkastajat: varauksin, vaadittu +2 %-yks. lisätuotto (Riskitarkastaja: erittäin suuri heilunta (66%/v))",
+     "voitto": null,
+     "pitoaika_pv": null,
+     "odotettu": 0.0718,
+     "toteutunut": null
+    }
+   ],
+   "kulut_yht": 10.28,
+   "arvohistoria": {
+    "2026-11-13": 1000.0,
+    "2026-11-16": 1000.0,
+    "2026-11-17": 1000.0,
+    "2026-11-18": 1000.0,
+    "2026-11-19": 1000.0,
+    "2026-11-20": 1000.0,
+    "2026-11-23": 1000.0,
+    "2026-11-24": 1000.0,
+    "2026-11-25": 980.77
+   },
+   "viimeisin_paatos": "2026-11-25"
   }
  },
- "viimeisin_kasitelty": "2026-11-26"
+ "viimeisin_kasitelty": "2026-11-25"
 }
