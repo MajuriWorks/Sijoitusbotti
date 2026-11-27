@@ -13,6 +13,10 @@ asiantuntija: **vastaa suomeksi, selkokielellä**, tee hyviksi todetut ratkaisut
   pilvessä. Jos se ehti jo ajaa, poista sen salkut `tila/salkut.json`:sta (avaimet `…@<botti>_vN`) ja sen rivit
   `arkisto/paatokset.jsonl`:sta (`"versio": "vN"`), jolloin se ajetaan seuraavalla kerralla uudelleen alusta.
   Ei tuhansia versioita: pienet parannukset kootaan samaan keskeneräiseen versioon.
+- Omistajan pysyvä ohje (27.11.2026): jos omistaja ei vastaa versiokysymykseen, tee korjaus automaattisesti
+  uutena versiona ja vie se päähaaraan (PR + merge) ennen seuraavaa pilviajoa, jotta päivitykset eivät jää tekemättä.
+  Testaa ensin. Kerro jälkikäteen, mitä tehtiin.
+- Uuteen versioon lisätään vain ne botit, joiden toiminta muuttuu (esim. v4: vain Lyhyt).
 - `botti/`-kansion koodi on yhteistä infraa (datan haku, uutiskeräys ja -tulkinta, raportti,
   versioiden ajaminen). Sitä saa korjata. Jos korjaus muuttaisi bottien päätöksiä, tee se uutena versiona.
 - Omistaja pyysi tätä alusta asti; sen rikkominen on aiemmin sotkenut tulokset.
