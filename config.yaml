@@ -194,6 +194,14 @@ botit:
     pohja: yhdistelma
     nimi: Yhdistelmä
     aloita: alusta
+  # v4 (27.11.2026): v3 + Lyhyt ostaa kalliin osakkeen koko rahalla. Pitkä ja Yhdistelmä toimisivat
+  # täsmälleen kuten v3 (Yhdistelmän Lyhyt-osalla on vain yksi osakepaikka), joten niitä ei ajeta.
+  lyhyt_v4:
+    kaytossa: true
+    versio: v4
+    pohja: lyhyt
+    nimi: Lyhyt
+    aloita: alusta
   # Uusi versio lisätään RINNALLE näin (vanha jatkaa ennallaan):
   # lyhyt_v2:
   #   kaytossa: true
@@ -213,6 +221,10 @@ versiot:
   v3:
     lukittu: "2026-11-25"
     muutos: "v2 + 'pienennä' ei puolita kauppaa vaan vaatii +2 % lisätuoton, kriisitaso vakavien uutisten osuutena, aikaraja vain liikkumattomille, hätämyynti vain kurssin vahvistamana (-3 % / 2 pv) eikä rauhoittavista tai jatkouutisista, vaihtolaskelma (heikoin omistus vaihdetaan selvästi parempaan, jos ero kattaa kulut), artikkelien tekstin sävy, väärät yhtiöosumat pois, pörssitiedotteet Nasdaqilta (rutiinit pois, osakeanti kielteinen), Lyhyt keskittää rahan yhteen osakkeeseen, jos kahden kaupan kulut olisivat liian suuret"
+
+  v4:
+    lukittu: "2026-11-27"
+    muutos: "v3 + Lyhyt keskittää rahan myös, kun yksi osake maksaa enemmän kuin puolikas raha (Genmab jäi ostamatta)"
 
 # ---------------- Uutiset, foorumit ja maailma ----------------
 uutiset:
@@ -287,7 +299,6 @@ uutiset:
     - https://feeds.bbci.co.uk/news/business/rss.xml
     - https://feeds.bbci.co.uk/news/world/rss.xml
     - https://www.cnbc.com/id/100003114/device/rss/rss.html
-    - https://www.theguardian.com/business/rss
     - https://www.hs.fi/rss/talous.xml
     - https://feeds.kauppalehti.fi/rss/main
     - https://yle.fi/rss/uutiset/tuoreimmat

@@ -5,6 +5,10 @@ vanhojen versioiden päätöksiä), **[korjaus]** = virheen korjaus.
 
 ---
 
+## 27.11.2026 – v4: Lyhyt ostaa myös kalliin osakkeen
+- **[v4]** Lyhyt v4 ajetaan rinnalle leikkikaupan alusta. Ainoa ero v3:een: jos paras ehdokas on niin kallis, ettei puolikas raha riitä yhteenkään osakkeeseen, raha keskitetään siihen, kunhan osto kannattaa kulujen jälkeen. *Syy: Lyhyt v3 jätti Genmabin (osake noin 518 €, odotettu tuotto +7 %) ostamatta 24.–26.11. Uudelleenajossa Lyhyt v4 olisi ostanut sen 25.11.* Pitkä ja Yhdistelmä v4 olisivat samat kuin v3, joten niitä ei ajeta.
+- [infra] Guardianin uutissyöte poistettu, koska se estää GitHubin palvelimet (403).
+
 ## 25.11.2026 (ilta) – Trumpin päivitysten keruu pois
 - [infra] Trumpin Truth Social -päivityksiä ei kerätä. *Syy: analyysi 14 527 päivityksestä aiheittain (tullit, Kiina, lääkkeet, NATO, öljy, yhtiömaininnat). Yhtiömaininnat (Apple, Nvidia, Tesla) liikuttivat kurssia noin 1,7-kertaisesti tavalliseen verrattuna, mutta suunnan jatkuminen oli kolikonheittoa (noin 50 %), ja liike tapahtuu minuuteissa. Iltabotti ei hyödy tästä.* Koodi jää talteen pois päältä.
 
